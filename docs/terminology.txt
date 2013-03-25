@@ -1,0 +1,4 @@
+* Programs *
+  client: The Arduino client software (C++)
+  hub: The Python Client/Hub software (Python3.3)
+  server: The Python Game/Communication server software (Python3.3)
