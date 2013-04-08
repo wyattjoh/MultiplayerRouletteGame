@@ -40,7 +40,7 @@ class ArduinoWatcher(threading.Thread):
                 arduinos = glob.glob('/dev/tty.usbmodem*')
             else:
                 # Assume Linux or something else
-                arduinos = glob.glob('/dev/ttyS*') + glob.glob('/dev/ttyUSB*')
+                arduinos = glob.glob('/dev/ttyACM*')
 
             for arduino in arduinos:
                 if arduino not in self.arduinos:
