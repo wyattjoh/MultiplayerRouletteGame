@@ -129,12 +129,12 @@ void draw_move(int8_t player_move, int8_t min_move, int8_t max_move){
     tft.fillTriangle(104, 8, 104, 40, 112, 24, FRAME_COLOR);
   }
   if (player_move == min_move){
-    tft.fillTriangle(55, 8, 55, 40, 47, 24, BACKGROUND_COLOR);
+    tft.fillTriangle(55, 8, 55, 40, 47, 24, UNSELECTED_COLOR);
     tft.fillTriangle(104, 8, 104, 40, 112, 24, FRAME_COLOR);
   }
   if (player_move == max_move){
     tft.fillTriangle(55, 8, 55, 40, 47, 24, FRAME_COLOR);
-    tft.fillTriangle(104, 8, 104, 40, 112, 24, BACKGROUND_COLOR);
+    tft.fillTriangle(104, 8, 104, 40, 112, 24, UNSELECTED_COLOR);
   }
 }
 

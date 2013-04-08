@@ -26,7 +26,7 @@ void loop(){
   }
   // Waiting for python hub response
   else{
-    read_update();
+    read_update(0);
     update_display();
   }
 }

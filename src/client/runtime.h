@@ -38,7 +38,7 @@ void client_init();
 void startup();
 
 // Reads in input from serial to update variables
-void read_update();
+void read_update(uint8_t init);
 
 // Updates client-side variables
 void update_vars();

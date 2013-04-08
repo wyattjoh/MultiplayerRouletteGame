@@ -51,7 +51,7 @@ void startup(){
   draw_loading();
   // Wait for initialization message, updates variables when received
   send_move(-1, 0);
-  read_update();
+  read_update(1);
   // Draws GUI, default starting move is 0
   player_move = 0;
   draw_background();
@@ -61,10 +61,16 @@ void startup(){
 
 
 // Processes input to update variables
-void read_update(){
+void read_update(uint8_t init){
   int received = 0;
   while (received != READ_BUFFER-1){
-    received = serial_readline(readin, READ_BUFFER);
+    if(init ==1){
+      send_move(-1,0);
+    }
+    if(Serial.available() > 0){
+      received = serial_readline(readin, READ_BUFFER);
+    }
+    delay(500);
   }
   update_vars();
 }
@@ -99,6 +105,9 @@ void update_display(){
 
 // Reads input from joystick to change move selection
 void move_select(){
+  if ((player_move > max_move) || (player_move < min_move)){
+    player_move = 0;
+  }
   uint8_t selected = 0;
   while(selected == 0){
     if((map(analogRead(JOYSTICK),0,1023,0,100)>75) && (player_move < max_move)){

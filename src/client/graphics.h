@@ -22,6 +22,7 @@
 #define FRAME_COLOR       0xFFFF
 #define TEXT_COLOR        0xFFFF
 #define MESSAGE_COLOR     0xFFFF
+#define UNSELECTED_COLOR  0xC618
 #define RED               0xF800
 #define GREEN             0x07E0
 #define BLUE              0x001F
