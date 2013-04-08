@@ -6,8 +6,7 @@ import threading
 import queue
 import collections
 
-CoreCommStruct = collections.namedtuple('CoreCommStruct', ('id', 'type', 'data'))
-SerialIO = collections.namedtuple('SerialIO', 'state,state_message,avatar_code,score,player_count')
+StateString = collections.namedtuple('SerialIO', 'state,state_message,avatar_code,score,player_count')
 MoveString = collections.namedtuple('MoveString', 'move,offset')
 
 class CoreException(Exception):
