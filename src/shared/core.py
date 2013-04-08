@@ -6,6 +6,7 @@ import threading
 import queue
 import collections
 
+CoreCommStruct = collections.namedtuple('CoreCommStruct', ('id', 'type', 'data'))
 StateString = collections.namedtuple('SerialIO', 'state,state_message,avatar_code,score,player_count')
 MoveString = collections.namedtuple('MoveString', 'move,offset')
 
@@ -69,43 +70,6 @@ class CoreComm:
                 pass
 
         return received
-
-class CoreCommand:
-    def __init__(self):
-        self.queue = queue.Queue()
-
-    def put(self, data):
-        return self.queue.put(data)
-
-    def load(self, data):
-        if type(data) is str:
-            try:
-                self.load(json.loads(data))
-            except ValueError:
-                raise CoreException("Invalid JSON.")
-        elif type(data) is not list:
-            raise CoreException("Unexpected data type passed to CoreCommand.load(data): %s." % str(type(data)))
-
-        for command in data:
-            self.put(command)
-
-    def get(self, index=0):
-        if index is 0:
-            index = self.queue.qsize()
-
-        for i in range(0, index):
-            yield self.queue.get()
-            self.queue.task_done()
-
-    def list(self):
-        return [x for x in self.get(0)]
-
-    def __str__(self):
-        return json.dumps(self.list())
-
-    def __bytes__(self):
-        return bytes(str(self), 'utf-8')
-
 
 if __name__ == "__main__":
     pass
