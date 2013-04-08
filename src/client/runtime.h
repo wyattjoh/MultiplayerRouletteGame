@@ -17,9 +17,36 @@
 
 
 
+// Defines read-buffer length
+#define READ_BUFFER 12
+
+
+
+/*~~~ EXTERNAL VARIABLES ~~~*/
+
+// State of client, determines behaviour
+extern uint8_t client_state;
+
+
+
 /*~~~ FORWARD DECLARATIONS ~~~*/
 
 // Initializes client graphics, serial port, and input
 void client_init();
+
+// Initial loading screen, receives first instance of variables
+void startup();
+
+// Reads in input from serial to update variables
+void read_update();
+
+// Updates client-side variables
+void update_vars();
+
+// Updates scores and other data on screen
+void update_display();
+
+// Processes joystick input to select moves
+void move_select();
 
 #endif

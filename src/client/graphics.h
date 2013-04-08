@@ -7,11 +7,15 @@
 #include <Adafruit_ST7735.h>
 #include <SPI.h>
 
+
+
 // Definition for initializing LCD Display
 // standard U of A library settings, assuming Atmel Mega SPI pins
 #define TFT_CS   6  // Chip select line for TFT display
 #define TFT_DC   7  // Data/command line for TFT
 #define TFT_RST  8  // Reset line for TFT (or connect to +5V)
+
+
 
 // Defined colors here for quick GUI editting
 #define BACKGROUND_COLOR  0x0000
@@ -22,8 +26,14 @@
 #define GREEN             0x07E0
 #define BLUE              0x001F
 
+
+
 // External declaration of tft
 extern Adafruit_ST7735 tft;
+
+
+
+/*~~~ FORWARD DECLARATIONS ~~~*/
 
 // Initializes LCD Screen
 void graphics_init();
@@ -45,4 +55,5 @@ void draw_move(int8_t player_move, int8_t min_move, int8_t max_move);
 
 // Displays status messages
 void draw_status(int8_t status_message);
+
 #endif

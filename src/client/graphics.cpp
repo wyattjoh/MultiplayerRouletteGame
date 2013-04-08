@@ -5,6 +5,8 @@ Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 
 
 
+/*~~~ FUNCTIONS ~~~*/
+
 // Initializes display
 void graphics_init(){
   tft.initR(INITR_REDTAB);
