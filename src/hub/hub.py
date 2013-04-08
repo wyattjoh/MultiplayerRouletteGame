@@ -8,7 +8,7 @@ import glob
 
 # Magic related to adding the shared modules
 import sys
-sys.path.append("../")
+sys.path.insert(0, "../")
 
 import shared.core as core
 
