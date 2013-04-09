@@ -348,11 +348,11 @@ class PlayerHub(threading.Thread):
         print("Got arduino ids: %s" % str(arduino_ids))
 
         while True:
+            time.sleep(2)
+
             lock_check = self.comm.send(('locked', True))
             if True is lock_check.data:
                 break
-
-            time.sleep(2)
 
             print("%d seconds left..." % lock_check.data)
 
@@ -397,7 +397,7 @@ if __name__ == '__main__':
     # Prepare and/or verify the env file
 
     config_options = core.load_configuration(PlayerHub.config_file, PlayerHub.config_options)
-    
+
     user_input = queue.Queue(1)
 
     ph = PlayerHub(user_input, config_options['ip_address'])
