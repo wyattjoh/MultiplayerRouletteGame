@@ -381,6 +381,7 @@ class PlayerHub(threading.Thread):
                     game_string_update = self.comm.send(('arduino_state', i))
                     if game_string_update.data is not False:
                         arduino.update(game_string_update.data)
+                        self.move_queue[i] = False
 
                 time.sleep(1)
 
