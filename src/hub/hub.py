@@ -354,7 +354,8 @@ class PlayerHub(threading.Thread):
             if True is lock_check.data:
                 break
 
-            print("%d seconds left..." % lock_check.data)
+            if lock_check.data != 0:
+                print("%d seconds left..." % lock_check.data)
 
 
         # 2. Init arduinos
