@@ -52,7 +52,7 @@ class GameHandler2:
                             is_locked = time_left >= self._lock_timeout
 
                             if is_locked is False:
-                                is_locked = int(time_left)
+                                is_locked = self._lock_timeout - int(time_left)
 
         if is_locked is True:
             self.ng.lock_game()
