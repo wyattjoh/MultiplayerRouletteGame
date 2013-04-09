@@ -16,6 +16,8 @@ class CoreException(Exception):
 class CoreComm:
     HOST = '10.0.1.6' # Default host
     PORT = 9000 # Default port
+    def __init__(self, ip_address):
+        self.HOST = ip_address
 
     def serial(self, data):
         return bytes(json.dumps(data), 'utf-8')

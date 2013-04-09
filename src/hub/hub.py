@@ -221,8 +221,8 @@ class Arduino(threading.Thread):
 
 
 class HubCommunicator(core.CoreComm):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, ip_address):
+        super().__init__(ip_address)
 
         self.hub_id = 0
         self._register_hub()
@@ -238,7 +238,7 @@ class HubCommunicator(core.CoreComm):
 
 
 class PlayerHub(threading.Thread):
-    def __init__(self, user_input):
+    def __init__(self, user_input, ip_address):
         super().__init__()
 
         # Setup the user input manager
@@ -252,7 +252,7 @@ class PlayerHub(threading.Thread):
         self.arduino_watcher.start()
 
         # Setup the communication handler
-        self.comm = HubCommunicator()
+        self.comm = HubCommunicator(ip_address)
 
         self.arduino_count = 0
         self.arduinos = []
@@ -387,11 +387,11 @@ class PlayerHub(threading.Thread):
 
 
 if __name__ == '__main__':
-    # TODO: Ask for the IP address of the host
+    ip_address = input("Enter ip address for the server>")
 
     user_input = queue.Queue(1)
 
-    ph = PlayerHub(user_input)
+    ph = PlayerHub(user_input, ip_address)
     ph.setDaemon(True)
     ph.start()
 

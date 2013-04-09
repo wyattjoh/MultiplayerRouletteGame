@@ -2,6 +2,8 @@ import time
 import threading
 import socketserver
 
+from optparse import OptionParser
+
 # Magic related to adding the shared modules
 import sys
 sys.path.insert(0, "../")
@@ -71,7 +73,7 @@ class GameHandler:
         return "0,0,%d,010,%d" % (avatar_id, 9)
 
 
-gh = GameHandler2()
+
 
 class ThreadedGameCommuncationHandler(socketserver.ThreadingMixIn, socketserver.TCPServer):
     pass
@@ -136,8 +138,8 @@ class GameCommuncationHandler(socketserver.BaseRequestHandler, core.CoreComm):
         self.request.sendall(self.serial(response))
 
 class ServerHandler:
-    def __init__(self):
-        HOST, PORT = core.CoreComm.HOST, core.CoreComm.PORT
+    def __init__(self, ip_address):
+        HOST, PORT = ip_address, core.CoreComm.PORT
 
         # Create the server, binding to localhost on port outlined in the shared.comm module
         server = ThreadedGameCommuncationHandler((HOST, PORT), GameCommuncationHandler)
@@ -155,4 +157,7 @@ class ServerHandler:
 
 
 if __name__ == "__main__":
-    ServerHandler()
+    ip_address = input("Enter ip address for this server>")
+
+    gh = GameHandler2()
+    ServerHandler(ip_address)
