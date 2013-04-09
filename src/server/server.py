@@ -1,28 +1,82 @@
-"""
-Usage:    server.py
-"""
-
 import time
-import docopt
 import threading
 import socketserver
 
 # Magic related to adding the shared modules
 import sys
-import os.path
-sys.path.insert(0,os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, "../")
 
-from shared.comm import extract_data, prepare_data, PORT
-from shared.game import SimpleGame, HubController
+import shared.core as core
+from naive_game import Game
 
-game_lock = threading.Lock()
+class GameHandler2:
+    _lock_timeout = 10
 
-game = SimpleGame()
-hubs = HubController(game)
+    def __init__(self):
+        self.ng = Game()
+
+        # Locks for GameHandler
+        self._add_hub_lock = threading.Lock()
+        self._locked_hubs_lock = threading.Lock()
+        self._timer_lock = threading.Lock()
+
+        self._timer = 0
+
+        self.hub_id = 0
+        self._locked_hubs = []
+
+    def new_hub(self):
+        hub_id = None
+        with self._add_hub_lock:
+            hub_id = self.hub_id
+            self.hub_id += 1
+            with self._timer_lock:
+                self._timer = 0
+        return hub_id
+
+    def locked_hub(self, hub_id):
+        is_locked = False
+        with self._locked_hubs_lock:
+            if hub_id not in self._locked_hubs:
+                self._locked_hubs.append(hub_id)
+
+            with self._add_hub_lock:
+                if self.hub_id == len(self._locked_hubs):
+                    with self._timer_lock:
+                        if self._timer == 0:
+                            self._timer = time.time()
+                        else:
+                            is_locked = time.time() - self._timer >= self._lock_timeout
+
+        if is_locked:
+            self.ng.lock_game()
+
+        return is_locked
+
+class GameHandler:
+    def __init__(self):
+        self.avatar_id = 0
+
+        # Locks
+        self._add_player_lock = threading.Lock()
+
+    def new_player(self):
+        avatar_id = None
+        with self._add_player_lock:
+            avatar_id = self.avatar_id
+            self.avatar_id += 1
+        return avatar_id
+
+    def game_string(self, avatar_id):
+        return "0,0,%d,010,%d" % (avatar_id, 9)
 
 
+gh = GameHandler2()
 
-class GameCommuncationHandler(socketserver.BaseRequestHandler):
+class ThreadedGameCommuncationHandler(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    pass
+
+class GameCommuncationHandler(socketserver.BaseRequestHandler, core.CoreComm):
     """
     The RequestHandler class for our server.
 
@@ -33,70 +87,72 @@ class GameCommuncationHandler(socketserver.BaseRequestHandler):
 
     def handle(self):
         # self.request is the TCP socket connected to the client
-        self.data = str(self.request.recv(1024).strip(), "utf-8")
+        self.data = self.recieve(self.request)
+
+        if self.data.type == 'register_hub':
+            response = (self.data.id, self.data.type, gh.new_hub())
+
+        elif self.data.type == 'status':
+            response = self.data
+
+        elif self.data.type == 'locked':
+            hub_id = self.data.id
+            response = (self.data.id, self.data.type, gh.locked_hub(hub_id))
+
+        elif self.data.type == 'register_arduinos':
+            # data -> number of arduinos to register for this client
+            id_array = []
+            for client in range(self.data.data):
+                player_id = gh.ng.add_new_player()
+                id_array.append(player_id)
+
+            response = (self.data.id, self.data.type, id_array)
+
+        elif self.data.type == 'init_arduino':
+            avatar_id = self.data.data
+            game_string = gh.ng.init_arduino(avatar_id)
+
+            response = (self.data.id, self.data.type, game_string)
+
+        elif self.data.type == 'arduino_state':
+            avatar_id = self.data.data
+            game_string = gh.ng.get_state_string(avatar_id)
+
+            response = (self.data.id, self.data.type, game_string)
+
+        elif self.data.type == 'arduino_move':
+            # Send translated move and player.
             
+            print("Received: %s." % str(self.data))
+
+            avatar_code = int(self.data.data[0])
+
+            move = int(self.data.data[1])
+
+            gh.ng.add_new_move(avatar_code, move)
+
+            response = (self.data.id, self.data.type, True)
+
+        self.request.sendall(self.serial(response))
+
+class ServerHandler:
+    def __init__(self):
+        HOST, PORT = core.CoreComm.HOST, core.CoreComm.PORT
+
+        # Create the server, binding to localhost on port outlined in the shared.comm module
+        server = ThreadedGameCommuncationHandler((HOST, PORT), GameCommuncationHandler)
+
+        server_thread = threading.Thread(target=server.serve_forever)
+        server_thread.daemon = True
+        server_thread.start()
+        print("Server loop running in thread: {}".format(server_thread.name))
+
         try:
-            data = extract_data(self.data)
-            print(data)
-        except:
-            return
+            while True:
+                time.sleep(10)
+        except KeyboardInterrupt:
+            pass
 
-        response = {}
-
-        with game_lock:
-            if data['type'] is 0:
-                # New Hub
-                print("<------- New Hub Request ------->")
-                hub = hubs.new_hub(data['hub'])
-                hub_serial = hub.serialize()
-                print(">------- New Hub Request -------<")
-            elif data['type'] is 10:
-                # State refresh
-                print("<------- Refresh Request ------->")
-                hub = hubs.get_hub(data['hub'])
-                hub.is_alive()
-                hub_serial = hub.serialize()
-                print(">------- Refresh Request -------<")
-            else:
-                return
-
-            response['hub'] = hub_serial
-            response['gid'] = game.get_gid()
-
-        send_data = prepare_data(response)
-        self.request.sendall(send_data)
-
-
-def play_game(**args):
-    while True:
-        with game_lock:
-            print("\n<-------------->\nGame State")
-            game.print_game_state()
-            print("\nPlay")
-            game.play()
-            print("<-------------->")
-        time.sleep(10)
 
 if __name__ == "__main__":
-    arguments = docopt.docopt(__doc__)
-
-    HOST = "localhost"
-
-    # Create the server, binding to localhost on port outlined in the shared.comm module
-    server = socketserver.TCPServer((HOST, PORT), GameCommuncationHandler)
-
-    # Activate the server; this will keep running until you
-    # interrupt the program with Ctrl-C
-    server_thread = threading.Thread(target=server.serve_forever)
-    # Exit the server thread when the main thread terminates
-    server_thread.daemon = True
-    server_thread.start()
-    print("Server loop running in thread:", server_thread.name)
-
-    game_thread = threading.Thread(target=play_game, kwargs={'game': game})
-    game_thread.daemon = True
-    game_thread.start()
-    print("Game loop running in thread:", game_thread.name)
-
-    while True:
-        time.sleep(60)
+    ServerHandler()

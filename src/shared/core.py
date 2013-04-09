@@ -1,13 +1,10 @@
 import errno
 import json
 import socket
-import sys
-import threading
-import queue
 import collections
 
 CoreCommStruct = collections.namedtuple('CoreCommStruct', ('id', 'type', 'data'))
-StateString = collections.namedtuple('SerialIO', 'state,state_message,avatar_code,score,player_count')
+StateString = collections.namedtuple('StateString', 'state,state_message,avatar_code,score,player_count')
 MoveString = collections.namedtuple('MoveString', 'move,offset')
 
 class CoreException(Exception):
@@ -17,8 +14,8 @@ class CoreException(Exception):
         return repr(self.value)
 
 class CoreComm:
-    HOST = 'localhost' # Default host
-    PORT = 8080 # Default port
+    HOST = '10.0.1.6' # Default host
+    PORT = 9000 # Default port
 
     def serial(self, data):
         return bytes(json.dumps(data), 'utf-8')

@@ -74,15 +74,13 @@ class Arduino(threading.Thread):
 
         # Setup initial variables
         self.name = name
-        self.recieved = None
 
         # state variables
-        self.state = None
+        self.state_code = None
         self.state_message = None
         self.avatar_code = None
         self.score = None
         self.player_count = None
-
 
         # Set up the threaded variables
         self.output = queue.Queue(1) # Output from Arduino
@@ -109,7 +107,7 @@ class Arduino(threading.Thread):
         self.register_arduino(state)
 
     def register_arduino(self, state):
-        message_io = core.SerialIO._make(state)
+        message_io = core.StateString._make(state.split(','))
         self.input.put(message_io)
         self._registered.set()
 
@@ -120,11 +118,25 @@ class Arduino(threading.Thread):
 
         try:
             # Check to see if input is a namedtuple object
-            if self.state.__class__.__name__ != 'SerialIO':
+            if self.state.__class__.__name__ != 'StateString':
                 return
 
+            state_str = self.state
+
+            state = int(state_str.state)
+            state_message = int(state_str.state_message)
+            avatar_code = int(state_str.avatar_code)
+            score = int(state_str.score)
+            player_count = int(state_str.player_count)
+
+            self.state_code = state
+            self.state_message = state_message
+            self.avatar_code = avatar_code
+            self.score = score
+            self.player_count = player_count
+
             # Encode message into string, then bytes
-            string = "%d,%d,%d,%03d,%d\n" % self.state
+            string = "%d,%d,%d,%03d,%d\n" % (state, state_message, avatar_code, score, player_count)
             reencoded = bytes(string, encoding='ascii')
 
             # Send the bytes over the serial interface
@@ -139,7 +151,7 @@ class Arduino(threading.Thread):
             # Receive the raw data from serial until it does match an expected input
             recieve_buffer = ""
             message = ""
-            while message == "":
+            while type(message) is str:
                 raw_message = self.serial.read(1)
                 recieve_buffer += raw_message.decode('ascii')
 
@@ -154,7 +166,16 @@ class Arduino(threading.Thread):
                     if len(recieve_buffer) > Arduino.max_message_length:
                         recieve_buffer = ""
                         continue
-                break
+
+                if type(message) is str:
+                    continue
+
+                try:
+                    int(message.move)
+                    int(message.offset)
+                except ValueError:
+                    message = ""
+                    recieve_buffer = ""
 
             return message
 
@@ -166,15 +187,24 @@ class Arduino(threading.Thread):
             serial_input = self._serial_receive()
             if int(serial_input.move) is -1 and int(serial_input.offset) is 0:
                 # Correct ini recieved, proceed to give them the state
-                
                 # 1. Wait until the registration data has been recieved
                 self._registered.wait()
+                self.state = self.input.get()
+
                 # 2. Send the registration to the arduino
                 self._serial_send()
+
+                self.serial.flushInput()
+
+                break
 
         while self.is_connected():
             # 1. Wait for move from arduino
             move_string = self._serial_receive()
+
+            if int(move_string.move) is -1:
+                self.serial.flushInput()
+                continue
 
             # 2. Send move of arduino
             # 2.1 Add move to output queue
@@ -226,6 +256,7 @@ class PlayerHub(threading.Thread):
 
         self.arduino_count = 0
         self.arduinos = []
+        self.move_queue = []
 
     def update_controllers(self):
         # Get current Arduinos
@@ -291,11 +322,8 @@ class PlayerHub(threading.Thread):
             if self.user_input.qsize():
                 command = self.user_input.get()
 
-                print("Command is %s." % command)
-
                 if command == "l":
                     self.arduino_watcher.disable()
-                    print("Lock has been initialized.. New players will be ignored.")
                     self.user_input.task_done()
                     break
 
@@ -308,25 +336,53 @@ class PlayerHub(threading.Thread):
 
         client_number = len(self.arduinos)
 
-        print("%d arduinos locked." % client_number)
-
-        global_locked = True
-        while global_locked:
-            lock_check = self.comm.send(('locked', True))
-            print(lock_check.data)
-            time.sleep(3)
-
         # 1. Register the arduinos
         # 1.1 Send a number of clients connected, it will return with the ids to assign in a list
         arduino_ids = self.comm.send(('register_arduinos', client_number))
-        print(arduino_ids)
+        print("Got arduino ids: %s" % str(arduino_ids))
 
-        # for arduino_id in arduino_ids:
-            # pr
+        countdown = 10
+        global_locked = True
+        while global_locked:
+            lock_check = self.comm.send(('locked', True))
+            global_locked = not lock_check.data
+            time.sleep(2)
+            print("%d seconds left..." % countdown)
+            countdown -= 2
+
+
+        # 2. Init arduinos
+        for i in range(client_number):
+            game_string = self.comm.send(('init_arduino', arduino_ids.data[i]))
+            self.arduinos[i].update(game_string.data)
+            self.move_queue.append(False)
+            print("Game State(%s): %s." % (self.arduinos[i].name, str(game_string)))
         
-        
+        # 3. Start arduino threads
         for arduino in self.arduinos:
             arduino.start()
+
+        # 4. Start game
+        while True:
+            for i in range(client_number):
+                arduino = self.arduinos[i]
+                if not arduino.output.empty():
+                    message = arduino.output.get()
+                    move = int(message.move)
+                    offset = int(message.offset)
+                    print("Move from (%s): %d." % (arduino.name, move - offset))
+                    received = self.comm.send(('arduino_move', (arduino.avatar_code, move - offset)))
+
+                    if received.data == True:
+                        self.move_queue[i] = True
+
+                    arduino.output.task_done()
+                if self.move_queue[i]:
+                    game_string_update = self.comm.send(('arduino_state', i))
+                    if game_string_update.data is not False:
+                        arduino.update(game_string_update.data)
+
+                time.sleep(1)
 
 
 

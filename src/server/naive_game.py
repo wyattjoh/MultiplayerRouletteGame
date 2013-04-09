@@ -13,11 +13,13 @@ CMPUT 297/115 - Multiplayer Roulette Project - Due 2013-04-11
 
 import player
 import random
+import time
 import graphics
+import threading
 
 
 
-class Game():
+class Game(threading.Thread):
     """
     Main game server, runs on a loop
     """
@@ -30,7 +32,16 @@ class Game():
         """
         Constructor for the game instance
         """
-        self.new_game()
+        super().__init__()
+
+        self.new_player_lock = threading.Lock()
+        self.game_lock_event = threading.Event()
+        self.new_player_event = threading.Event()
+
+        self.new_move_lock = threading.Lock()
+        self.new_move_event = threading.Event()
+
+        self.start()
         
         
     def new_game(self):
@@ -57,6 +68,10 @@ class Game():
         # Round counter
         self._cur_round = 1
         
+        # Arduino mailbox
+        self._arduino_mailbox = []
+        self._arduino_mailbox_lock = threading.Lock()
+
         # GUI instance
         self._display = graphics.GUI()
 
@@ -69,22 +84,24 @@ class Game():
         
         Failure (full game) returns a -1.
         """
-        # Returns player_id/avatar code if successful, else -1
-        if ((len(self._player_list) < self._player_limit) and 
-            self._game_phase == 0):
-            avatar = self._avatars.pop(0)
-            self._player_list.append(player.Player(avatar, avatar))
-            return(avatar)
-            # GUI UPDATE, ADD PLAYER TO DISPLAYED LIST
-        else:
-            return(-1)
+        avatar = -1
+        with self.new_player_lock:
+            # Returns player_id/avatar code if successful, else -1
+            if ((len(self._player_list) < self._player_limit) and 
+                self._game_phase == 0):
+                avatar = self._avatars.pop(0)
+                self._player_list.append(player.Player(avatar, avatar))
+                self.new_player_event.set()
+                # GUI UPDATE, ADD PLAYER TO DISPLAYED LIST
+        
+        return avatar
 
         
     def lock_game(self):
         """
         Starts the game, locking in all players.
         """
-        self._game_phase = 1
+        self.game_lock_event.set()
         # GUI UPDATE, DRAW THE WHEEL
         
 
@@ -104,10 +121,11 @@ class Game():
         Adds a move into the move queue from player.
         Player's moved flag is set to True, to prevent multiple additions
         """
-        if self._player_list[player].has_moved() == False:
-            self._move_queue.append(move)
-            self._player_list[player].made_move()
-            # GUI UPDATE FOR MOVE INDICATOR FOR THAT PLAYER
+        with self.new_move_lock:
+            if self._player_list[player].has_moved() == False:
+                self._move_queue.append(move)
+                self._player_list[player].made_move()
+                self.new_move_event.set()
 
         
     def execute_moves(self):
@@ -126,6 +144,13 @@ class Game():
         winner = self._player_list[self._pointer]
         score = winner.get_score() + self._pot
         winner.set_score(score)
+
+        if self._pot <= 0:
+            text = "lost"
+        else:
+            text = "won"
+
+        print("Avatar: %d %s %d points!" % (winner.get_avatar(), text, self._pot))
         
         # Clears all moved flags for players
         for player in self._player_list:
@@ -138,8 +163,12 @@ class Game():
         else:
             self._game_phase = 1
             self.new_pot()
+
+        with self._arduino_mailbox_lock:
+            self._arduino_mailbox = [ x for x in range(len(self._player_list)) ]
+
         # UPDATE GUI FOR MOVE STATUS, POT, ROUND COUNT
-        # UPDATE ARDUINO STATE STRINGS
+        # TODO: Update arduino state strings
         
         
     def game_over(self):
@@ -154,10 +183,20 @@ class Game():
         else:
             # GUI DISPLAY ONE WINNER
             pass
-        # SEND UPDATES TO ARDUINOS
+        # TODO: Update arduino state strings
 
 
-    def get_state_string(self, avatar_id):
+    def init_arduino(self, avatar_id):
+        return self.get_state_string(avatar_id, True)
+
+    def get_state_string(self, avatar_id, ovr=False):
+        with self._arduino_mailbox_lock:
+            if avatar_id in self._arduino_mailbox:
+                ovr = True
+                self._arduino_mailbox.pop(self._arduino_mailbox.index(avatar_id))
+
+        if self._game_phase == 1 and ovr is False:
+            return False
         if self._game_phase == 3:
             state = 1
             status = 2
@@ -167,17 +206,24 @@ class Game():
         avatar = avatar_id
         score = self._player_list[avatar_id].get_score()
         count = len(self._player_list)
-        return("%d,%d,%d,%03d,%d" %(state,status,avatar,score,count))
+        return "%d,%d,%d,%d,%d" % (state, status, avatar, score, count)
     
     
     def run(self):
-        while(True):
+        self.new_game()
+
+        while True:
             if self._game_phase == 0:
                 """
                 Allows for players to join
                 """
-                # CHECK FOR NEW PLAYER EVENT
-                # CHECK FOR LOCK EVENT
+
+                if self.game_lock_event.is_set():
+                    self._game_phase = 1
+                if self.new_player_event.is_set():
+                    with self.new_player_lock:
+                        # DO GUI UPDATE FOR THE NEW PLAYER THAT IS ADDED
+                        self.new_player_event.clear()
                 """
                 Goes through game phases 1,2,3
                 1: Waiting for all moves to be submitted
@@ -185,9 +231,14 @@ class Game():
                 3: Game over, winner declared
                 """
             elif self._game_phase == 1:
-                # CHECK FOR NEW MOVE EVENT
-                if len(self._move_queue) == len(self._player_list):
-                    self._game_phase = 2
+                if self.new_move_event.wait():
+                    with self.new_move_lock:
+                        # GUI UPDATE FOR MOVE INDICATOR FOR THAT PLAYER
+
+                        if len(self._move_queue) == len(self._player_list):
+                            self._game_phase = 2
+
+                        self.new_move_event.clear()
             elif self._game_phase == 2:
                 self.execute_moves()
             elif self._game_phase == 3:
