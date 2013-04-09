@@ -370,7 +370,7 @@ class PlayerHub(threading.Thread):
                     message = arduino.output.get()
                     move = int(message.move)
                     offset = int(message.offset)
-                    print("Move from (%s): %d." % (arduino.name, move - offset))
+                    print("%s Move from (%d): %d." % (arduino.name, arduino.avatar_code, move - offset))
                     received = self.comm.send(('arduino_move', (arduino.avatar_code, move - offset)))
 
                     if received.data == True:
@@ -378,7 +378,7 @@ class PlayerHub(threading.Thread):
 
                     arduino.output.task_done()
                 if self.move_queue[i]:
-                    game_string_update = self.comm.send(('arduino_state', i))
+                    game_string_update = self.comm.send(('arduino_state', arduino.avatar_code))
                     if game_string_update.data is not False:
                         arduino.update(game_string_update.data)
                         self.move_queue[i] = False
