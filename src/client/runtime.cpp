@@ -50,7 +50,6 @@ void client_init(){
 void startup(){
   draw_loading();
   // Wait for initialization message, updates variables when received
-  send_move(-1, 0);
   read_update(1);
   // Draws GUI, default starting move is 0
   player_move = 0;
@@ -70,7 +69,7 @@ void read_update(uint8_t init){
     if(Serial.available() > 0){
       received = serial_readline(readin, READ_BUFFER);
     }
-    delay(500);
+    delay(1000);
   }
   update_vars();
 }
