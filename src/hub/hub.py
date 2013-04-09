@@ -8,6 +8,7 @@ import glob
 
 # Magic related to adding the shared modules
 import sys
+import os
 sys.path.insert(0, "../")
 
 import shared.core as core
@@ -238,8 +239,13 @@ class HubCommunicator(core.CoreComm):
 
 
 class PlayerHub(threading.Thread):
+    config_file = "../shared/.env"
+    config_options = ['ip_address']
+
     def __init__(self, user_input, ip_address):
         super().__init__()
+
+        # Load defaults from config file if exists
 
         # Setup the user input manager
         self.user_input = user_input
@@ -341,14 +347,14 @@ class PlayerHub(threading.Thread):
         arduino_ids = self.comm.send(('register_arduinos', client_number))
         print("Got arduino ids: %s" % str(arduino_ids))
 
-        countdown = 10
-        global_locked = True
-        while global_locked:
+        while True:
             lock_check = self.comm.send(('locked', True))
-            global_locked = not lock_check.data
+            if True is lock_check.data:
+                break
+
             time.sleep(2)
-            print("%d seconds left..." % countdown)
-            countdown -= 2
+
+            print("%d seconds left..." % lock_check.data)
 
 
         # 2. Init arduinos
@@ -388,11 +394,13 @@ class PlayerHub(threading.Thread):
 
 
 if __name__ == '__main__':
-    ip_address = input("Enter ip address for the server>")
+    # Prepare and/or verify the env file
 
+    config_options = core.load_configuration(PlayerHub.config_file, PlayerHub.config_options)
+    
     user_input = queue.Queue(1)
 
-    ph = PlayerHub(user_input, ip_address)
+    ph = PlayerHub(user_input, config_options['ip_address'])
     ph.setDaemon(True)
     ph.start()
 

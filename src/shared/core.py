@@ -2,6 +2,7 @@ import errno
 import json
 import socket
 import collections
+import os
 
 CoreCommStruct = collections.namedtuple('CoreCommStruct', ('id', 'type', 'data'))
 StateString = collections.namedtuple('StateString', 'state,state_message,avatar_code,score,player_count')
@@ -69,6 +70,46 @@ class CoreComm:
                 pass
 
         return received
+
+def load_configuration(config_filename, config_options_list):
+        # 1. Check if .env exists, else create it
+    if os.path.isfile(config_filename):
+        # Is a file, don't need to create it
+        pass
+    else:
+        cf = open(config_filename, 'w')
+        cf.close()
+
+    # 2. Open file to check if there is the config options we need there
+    with open(config_filename, 'rb') as config_file:
+        config_file.seek(0)
+        # Is a file, check if the settings are there:
+        config_options = {}
+        for line in config_file.readlines():
+            (key, value) = str(line, 'utf-8').strip('\n').split(",")
+            config_options[key] = value
+
+    
+    for config_option in config_options_list:
+        if config_option in config_options:
+            response = input("Use %s as %s? [y/n]: " % (str(config_options[config_option]), str(config_option)))
+
+            if response == 'y':
+                continue
+            elif response == 'n':
+                del config_options[config_option]
+
+        if config_option not in config_options:
+            value = input("Enter %s> " % config_option)
+            config_options[config_option] = value
+
+
+    with open(config_filename, 'w') as config_file:
+        config_file.seek(0)
+        for config_option in config_options:
+            config_file.write("%s,%s\n" % (config_option, config_options[config_option]))
+
+    return config_options
 
 if __name__ == "__main__":
     pass

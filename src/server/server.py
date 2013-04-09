@@ -48,9 +48,13 @@ class GameHandler2:
                         if self._timer == 0:
                             self._timer = time.time()
                         else:
-                            is_locked = time.time() - self._timer >= self._lock_timeout
+                            time_left = time.time() - self._timer
+                            is_locked = time_left >= self._lock_timeout
 
-        if is_locked:
+                            if is_locked is False:
+                                is_locked = int(time_left)
+
+        if is_locked is True:
             self.ng.lock_game()
 
         return is_locked
@@ -90,6 +94,7 @@ class GameCommuncationHandler(socketserver.BaseRequestHandler, core.CoreComm):
     def handle(self):
         # self.request is the TCP socket connected to the client
         self.data = self.recieve(self.request)
+        print("Recieved: %s" % str(self.data))
 
         if self.data.type == 'register_hub':
             response = (self.data.id, self.data.type, gh.new_hub())
@@ -138,6 +143,9 @@ class GameCommuncationHandler(socketserver.BaseRequestHandler, core.CoreComm):
         self.request.sendall(self.serial(response))
 
 class ServerHandler:
+    config_file = "../shared/.env"
+    config_options = ['ip_address']
+
     def __init__(self, ip_address):
         HOST, PORT = ip_address, core.CoreComm.PORT
 
@@ -157,7 +165,7 @@ class ServerHandler:
 
 
 if __name__ == "__main__":
-    ip_address = input("Enter ip address for this server>")
+    config_options = core.load_configuration(ServerHandler.config_file, ServerHandler.config_options)
 
     gh = GameHandler2()
-    ServerHandler(ip_address)
+    ServerHandler(config_options['ip_address'])
