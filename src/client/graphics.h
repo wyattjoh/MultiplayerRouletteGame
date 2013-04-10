@@ -55,6 +55,6 @@ void draw_score(uint8_t player_score);
 void draw_move(int8_t player_move, int8_t min_move, int8_t max_move);
 
 // Displays status messages
-void draw_status(int8_t status_message);
+void draw_status(int8_t status_message, int8_t winnings);
 
 #endif

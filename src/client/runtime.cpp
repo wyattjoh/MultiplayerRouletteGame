@@ -26,6 +26,9 @@ int8_t move_offset;
 int8_t min_move;
 int8_t max_move;
 
+// Previous score, used to detect a win
+int8_t prev_score;
+
 // Buffer for reading received messages from Python
 // Format: S,M,A,PPP,C\n
 //  State, Status Message, Avatar, Points (Always 3 digit), Player Count, Null, Newline
@@ -78,6 +81,7 @@ void read_update(uint8_t init){
 
 // Updates client-side variables from readin, converts from ASCII
 void update_vars(){
+  prev_score = player_score;
   client_state = readin[0] - 48;
   status_message = readin[2] - 48;
   player_icon = readin[4] - 48;
@@ -88,6 +92,9 @@ void update_vars(){
   move_offset = ((player_count+1)/2) - 1;
   min_move = -move_offset;
   max_move = player_count/2;
+  if(player_score > prev_score){
+    status_message = 3;
+  }
 }
 
 
@@ -97,7 +104,7 @@ void update_display(){
   draw_player_icon(player_icon);
   draw_score(player_score);
   draw_move(player_move, min_move, max_move);
-  draw_status(status_message);
+  draw_status(status_message, player_score-prev_score);
 }
 
 

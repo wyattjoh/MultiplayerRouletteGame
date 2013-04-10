@@ -141,7 +141,7 @@ void draw_move(int8_t player_move, int8_t min_move, int8_t max_move){
 
 
 // Displays status messages
-void draw_status(int8_t status_message){
+void draw_status(int8_t status_message, int8_t winnings){
   // Clears previous message
   tft.fillRect(0, 45, 160, 30, BACKGROUND_COLOR);
   tft.setTextColor(MESSAGE_COLOR);
@@ -162,5 +162,13 @@ void draw_status(int8_t status_message){
     tft.setTextColor(RED);
     tft.setCursor(28, 51);
     tft.print("GAME OVER");
+  }
+  if (status_message == 3){
+    tft.setCursor(54, 48);
+    tft.print("Move sent");
+    tft.setCursor(6, 60);
+    tft.print("You won ");
+    tft.print(winnings);
+    tft.print(" points!");
   }
 }
