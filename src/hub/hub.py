@@ -8,7 +8,6 @@ import glob
 
 # Magic related to adding the shared modules
 import sys
-import os
 sys.path.insert(0, "../")
 
 import shared.core as core
@@ -201,8 +200,10 @@ class Arduino(threading.Thread):
 
         while self.is_connected():
             # 1. Wait for move from arduino
+            # 1.1 Do a blocking read from it until it responds with soemthing and a newline
             move_string = self._serial_receive()
 
+            # 1.2 
             if int(move_string.move) is -1:
                 self.serial.flushInput()
                 continue

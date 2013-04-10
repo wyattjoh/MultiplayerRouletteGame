@@ -56,13 +56,14 @@ class GUI(threading.Thread):
         self._player_score_display = []
         self._player_moved = []
         self._player_move_status = []
-        self._player_spots = []
-        
+        self._player_spots = []      
+
+    def run(self):
+        print("GUI Thread Started.")
         self.draw_init()
-        self._game.after(1,self.event_handling)
-        self._game.mainloop()        
-
-
+        self._game.after(10,self.event_handling)
+        self._game.mainloop()
+        print("GUI Thread Exited.")
 
     def draw_init(self):
         """

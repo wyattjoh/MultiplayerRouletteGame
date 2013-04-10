@@ -34,6 +34,9 @@ class Game(threading.Thread):
         """
         super().__init__()
 
+        # GUI instance
+        self._display = graphics.GUI()
+
         self.new_player_lock = threading.Lock()
         self.game_lock_event = threading.Event()
         self.new_player_event = threading.Event()
@@ -43,7 +46,9 @@ class Game(threading.Thread):
 
 
         self.start()
-        
+    
+    def start_gui(self):
+        self._display.run()
         
     def new_game(self):
         """
@@ -60,10 +65,7 @@ class Game(threading.Thread):
         self._move_queue = []
 
         # Current wheel position
-        self._pointer = 0
-        
-        # GUI instance
-        self._display = graphics.GUI()        
+        self._pointer = 0       
         
         # Points to be won for current round (randomly generated)
         self._pot = 0

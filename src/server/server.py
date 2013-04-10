@@ -10,7 +10,7 @@ import shared.core as core
 from naive_game import Game
 
 class GameHandler2:
-    _lock_timeout = 10
+    _lock_timeout = 8
 
     def __init__(self):
         self.ng = Game()
@@ -57,22 +57,22 @@ class GameHandler2:
 
         return is_locked
 
-class GameHandler:
-    def __init__(self):
-        self.avatar_id = 0
+# class GameHandler:
+#     def __init__(self):
+#         self.avatar_id = 0
 
-        # Locks
-        self._add_player_lock = threading.Lock()
+#         # Locks
+#         self._add_player_lock = threading.Lock()
 
-    def new_player(self):
-        avatar_id = None
-        with self._add_player_lock:
-            avatar_id = self.avatar_id
-            self.avatar_id += 1
-        return avatar_id
+#     def new_player(self):
+#         avatar_id = None
+#         with self._add_player_lock:
+#             avatar_id = self.avatar_id
+#             self.avatar_id += 1
+#         return avatar_id
 
-    def game_string(self, avatar_id):
-        return "0,0,%d,010,%d" % (avatar_id, 9)
+#     def game_string(self, avatar_id):
+#         return "0,0,%d,010,%d" % (avatar_id, 9)
 
 
 
@@ -156,8 +156,7 @@ class ServerHandler:
         print("Server loop running in thread: {}".format(server_thread.name))
 
         try:
-            while True:
-                time.sleep(10)
+            gh.ng.start_gui()
         except KeyboardInterrupt:
             pass
 
