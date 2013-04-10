@@ -164,10 +164,6 @@ class Game(threading.Thread):
 
         print("Avatar: %d %s %d points!" % (winner.get_avatar(), text, self._pot))
         
-        # Clears all moved flags for players
-        for player in self._player_list:
-            player.next_move()
-        
         # Advances to next round
         self._cur_round += 1
         self._display._cur_round = self._cur_round
@@ -179,7 +175,13 @@ class Game(threading.Thread):
         
         self._display.execution_event.set()
         while self._display.execution_event.is_set():
-            pass        
+            pass
+        
+        # Clears all moved flags for players
+        for player in self._player_list:
+            player.next_move()
+    
+        self._display.new_move_event.set()
 
         with self._arduino_mailbox_lock:
             self._arduino_mailbox = [ x for x in range(len(self._player_list)) ]

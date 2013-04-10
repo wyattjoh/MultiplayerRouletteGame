@@ -252,7 +252,7 @@ class GUI(threading.Thread):
         player 1.
         """
         # Draws arrow pointing at player 1 to begin with
-        self._arrow = self._play_area.create_polygon(280,350,300,370,425,350,300,330,fill="yellow")
+        self._arrow = self._play_area.create_polygon(280,350,300,370,425,350,300,330,fill="")
 
 
     
@@ -262,6 +262,7 @@ class GUI(threading.Thread):
         """
         # Updates arrow coordinates
         self._play_area.coords(self._arrow,300+20*math.cos(angle+math.pi),350+20*math.sin(angle+math.pi),300+20*math.cos(angle+math.pi/2),350+20*math.sin(angle+math.pi/2),300+125*math.cos(angle),350+125*math.sin(angle),300+20*math.cos(angle-math.pi/2),350+20*math.sin(angle-math.pi/2))
+        self._play_area.itemconfig(self._arrow, fill="yellow")
         
         # Displays change in arrow state
         self.refresh_display()
