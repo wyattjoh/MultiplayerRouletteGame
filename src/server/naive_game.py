@@ -62,6 +62,9 @@ class Game(threading.Thread):
         # Current wheel position
         self._pointer = 0
         
+        # GUI instance
+        self._display = graphics.GUI()        
+        
         # Points to be won for current round (randomly generated)
         self._pot = 0
         self.new_pot()
@@ -73,8 +76,6 @@ class Game(threading.Thread):
         self._arduino_mailbox = []
         self._arduino_mailbox_lock = threading.Lock()
 
-        # GUI instance
-        self._display = graphics.GUI()
 
         
     def add_new_player(self):
