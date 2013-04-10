@@ -59,6 +59,8 @@ class GUI(threading.Thread):
         self._player_spots = []
         
         self.draw_init()
+        a._game.after(1,a.event_handling)
+        a._game.mainloop()        
 
 
 
@@ -472,8 +474,7 @@ class GUI(threading.Thread):
     #self.winner_event = threading.Event()
 
         
-        
-    
+"""
 a = GUI()
 for i in range(0,9):
     a._player_list.append(player.Player(i,i))
@@ -490,3 +491,4 @@ a.new_move_event.set()
 a.execution_event.set()
 a._game.after(1,a.event_handling)
 a._game.mainloop()
+"""

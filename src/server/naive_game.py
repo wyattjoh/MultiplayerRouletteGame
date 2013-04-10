@@ -41,6 +41,7 @@ class Game(threading.Thread):
         self.new_move_lock = threading.Lock()
         self.new_move_event = threading.Event()
 
+
         self.start()
         
         
@@ -91,8 +92,9 @@ class Game(threading.Thread):
                 self._game_phase == 0):
                 avatar = self._avatars.pop(0)
                 self._player_list.append(player.Player(avatar, avatar))
+                self._display._player_list = self._player_list
                 self.new_player_event.set()
-                # GUI UPDATE, ADD PLAYER TO DISPLAYED LIST
+                self._display.new_player_event.set()
         
         return avatar
 
@@ -101,8 +103,13 @@ class Game(threading.Thread):
         """
         Starts the game, locking in all players.
         """
+        self._display._player_list = self._player_list
+        self._display._move_queue = self._move_queue
+        self._display._pointer = self._pointer
+        self._display._pot = self._pot
+        self._display._cur_round = self._cur_round
+        self._display.game_lock_event.set()
         self.game_lock_event.set()
-        # GUI UPDATE, DRAW THE WHEEL
         
 
     def new_pot(self):
@@ -114,6 +121,7 @@ class Game(threading.Thread):
         min_pot = 1
         max_pot = 10
         self._pot = random.randint(min_pot, max_pot)
+        self._display._pot = self._pot
     
     
     def add_new_move(self, player, move):
@@ -126,6 +134,7 @@ class Game(threading.Thread):
                 self._move_queue.append(move)
                 self._player_list[player].made_move()
                 self.new_move_event.set()
+                self._display.new_move_event.set()
 
         
     def execute_moves(self):
@@ -134,10 +143,10 @@ class Game(threading.Thread):
         pointed to as the result of all moves.
         """
         # Executes each move, then clears the queue
+        self._display._move_queue = self._move_queue
         for move in self._move_queue:
             self._pointer += move
             self._pointer = self._pointer % len(self._player_list)
-            # UPDATE GUI WITH EACH MOVE
         self._move_queue = []
         
         # Awards the pot to the winner
@@ -158,11 +167,16 @@ class Game(threading.Thread):
         
         # Advances to next round
         self._cur_round += 1
+        self._display._cur_round = self._cur_round
         if self._cur_round > self._round_limit:
             self._game_phase = 3
         else:
             self._game_phase = 1
             self.new_pot()
+        
+        self._display.execution_event.set()
+        while self._display.execution_event.is_set():
+            pass        
 
         with self._arduino_mailbox_lock:
             self._arduino_mailbox = [ x for x in range(len(self._player_list)) ]
@@ -233,8 +247,6 @@ class Game(threading.Thread):
             elif self._game_phase == 1:
                 if self.new_move_event.wait():
                     with self.new_move_lock:
-                        # GUI UPDATE FOR MOVE INDICATOR FOR THAT PLAYER
-
                         if len(self._move_queue) == len(self._player_list):
                             self._game_phase = 2
 
