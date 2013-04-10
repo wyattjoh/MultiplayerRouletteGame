@@ -131,7 +131,7 @@ void move_select(){
       send_move(player_move+move_offset, move_offset);
       client_state = 1;
       status_message = 1;
-      draw_status(status_message);
+      draw_status(status_message, 0);
     }
   }
 }
