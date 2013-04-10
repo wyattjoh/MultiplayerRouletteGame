@@ -166,7 +166,7 @@ void draw_status(int8_t status_message, int8_t winnings){
   if (status_message == 3){
     tft.setCursor(32, 48);
     tft.print("Select your move");
-    tft.setCursor(32, 60);
+    tft.setCursor(30, 60);
     tft.print("You won ");
     tft.print(winnings);
     tft.print(" points!");

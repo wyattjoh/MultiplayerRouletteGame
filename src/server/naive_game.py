@@ -111,8 +111,8 @@ class Game(threading.Thread):
         Boundaries set between min_pot and max_pot
         """
         # Boundaries for pot size
-        min_pot = -5
-        max_pot = 10
+        min_pot = 0
+        max_pot = 20
         self._pot = random.randint(min_pot, max_pot)
     
     
