@@ -2,8 +2,6 @@ import time
 import threading
 import socketserver
 
-from optparse import OptionParser
-
 # Magic related to adding the shared modules
 import sys
 sys.path.insert(0, "../")
