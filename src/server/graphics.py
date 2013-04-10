@@ -59,7 +59,7 @@ class GUI(threading.Thread):
         self._player_spots = []
         
         self.draw_init()
-        self._game.after(1,a.event_handling)
+        self._game.after(1,self.event_handling)
         self._game.mainloop()        
 
 
