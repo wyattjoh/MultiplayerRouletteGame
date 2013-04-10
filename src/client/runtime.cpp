@@ -94,6 +94,9 @@ void update_vars(){
   max_move = player_count/2;
   if(player_score > prev_score){
     status_message = 3;
+    if(client_state != 0){
+      status_message = 4;
+    }
   }
 }
 

@@ -171,4 +171,14 @@ void draw_status(int8_t status_message, int8_t winnings){
     tft.print(winnings);
     tft.print(" points!");
   }
+  if (status_message ==4){
+    tft.setTextColor(RED);
+    tft.setCursor(54, 48);
+    tft.print("GAME OVER");
+    tft.setTextColor(MESSAGE_COLOR);
+    tft.setCursor(30, 60);
+    tft.print("You won ");
+    tft.print(winnings);
+    tft.print(" points!");
+  }
 }
