@@ -13,6 +13,7 @@ sys.path.insert(0, "../")
 
 import shared.core as core
 
+
 class ArduinoWatcher(threading.Thread):
     def __init__(self, added_queue, removed_queue):
         super().__init__()
@@ -44,7 +45,9 @@ class ArduinoWatcher(threading.Thread):
                     self.removed_queue.put(arduino)
                     self.arduinos.remove(arduino)
 
-            # Wait until the added and the removed currently added in this cycle have been processed.
+            # Wait until the added and the removed currently added in
+            # this cycle have been processed.
+
             self.added_queue.join()
             self.removed_queue.join()
 
@@ -57,10 +60,9 @@ class ArduinoWatcher(threading.Thread):
         self._enabled.clear()
 
 
-
-
 class Arduino(threading.Thread):
     max_message_length = 5
+
     def __init__(self, name):
         super().__init__()
 
@@ -75,8 +77,8 @@ class Arduino(threading.Thread):
         self.player_count = None
 
         # Set up the threaded variables
-        self.output = queue.Queue(1) # Output from Arduino
-        self.input = queue.Queue(1) # Input to Arduino
+        self.output = queue.Queue(1)  # Output from Arduino
+        self.input = queue.Queue(1)  # Input to Arduino
         self._died = threading.Event()
         self._registered = threading.Event()
 
@@ -135,12 +137,15 @@ class Arduino(threading.Thread):
             self.serial.write(reencoded)
 
         except (serial.serialutil.SerialException, OSError):
-            # If there was a SerialException or OSError, the client has disconnected
+            # If there was a SerialException or OSError
+            # the client has disconnected
             self.disconnected()
 
     def _serial_receive(self):
         try:
-            # Receive the raw data from serial until it does match an expected input
+            # Receive the raw data from serial until
+            # it does match an expected input
+
             recieve_buffer = ""
             message = ""
             while type(message) is str:
@@ -192,10 +197,11 @@ class Arduino(threading.Thread):
 
         while self.is_connected():
             # 1. Wait for move from arduino
-            # 1.1 Do a blocking read from it until it responds with soemthing and a newline
+            # 1.1 Do a blocking read from it until it responds
+            #     with soemthing and a newline
             move_string = self._serial_receive()
 
-            # 1.2 
+            # 1.2 Check to see if not ini message
             if int(move_string.move) is -1:
                 self.serial.flushInput()
                 continue
@@ -260,21 +266,20 @@ class PlayerHub(threading.Thread):
     def update_controllers(self):
         # Get current Arduinos
         arduinos = [arduino for arduino in self.arduinos]
-        
 
         # Add in detected Arduinos
         while self.added_queue.qsize():
-            arduino_name = self.added_queue.get() # Retrive the name from the queue
+            # Retrive the name from the queue
+            arduino_name = self.added_queue.get()
 
             # Generate a new Arduino object to take care of this
-            arduino = Arduino(arduino_name) 
-            arduino.setDaemon(True)
-            # arduino.start()
+            arduino_obj = Arduino(arduino_name)
+            arduino_obj.setDaemon(True)
 
             core.CoreLogger.debug("Arduino has been detected on port: %s" % arduino_name)
-            
+
             # Add it to the arduinos list
-            arduinos.append(arduino)
+            arduinos.append(arduino_obj)
 
             # Mark the task as done
             self.added_queue.task_done()
@@ -284,12 +289,12 @@ class PlayerHub(threading.Thread):
         # Removed disconnected Arduinos
         while self.removed_queue.qsize():
             arduino = self.removed_queue.get()
-            
+
             # Reverse lookup the index from the names list
             index = arduino_names.index(arduino)
 
             core.CoreLogger.debug("Arduino has been removed from port: %s" % arduino)
-            
+
             # Get a copy of the arduino object and mark it as disconnected
             arduino = arduinos[index]
             arduino.disconnected()
@@ -297,12 +302,11 @@ class PlayerHub(threading.Thread):
             # Remove references to it in lists
             del arduinos[index]
             del arduino_names[index]
-            
+
             # Mark this arduino as removed
             self.removed_queue.task_done()
 
         print("Arduino list:")
-
         for arduino in arduino_names:
             print("\t%s" % str(arduino))
 
@@ -316,8 +320,6 @@ class PlayerHub(threading.Thread):
         pass
 
     def run(self):
-        # TODO: Print the welcoming message
-        
         # Enable the port watcher
         self.arduino_watcher.enable()
         while True:
@@ -341,7 +343,8 @@ class PlayerHub(threading.Thread):
         client_number = len(self.arduinos)
 
         # 1. Register the arduinos
-        # 1.1 Send a number of clients connected, it will return with the ids to assign in a list
+        # 1.1 Send a number of clients connected, it will
+        #     return with the ids to assign in a list
         arduino_ids = self.comm.send(('register_arduinos', client_number))
         core.CoreLogger.debug("Got arduino ids: %s" % str(arduino_ids))
 
@@ -364,7 +367,7 @@ class PlayerHub(threading.Thread):
             self.arduinos[i].update(game_string.data)
             self.move_queue.append(False)
             core.CoreLogger.debug("Game State(%s): %s." % (self.arduinos[i].name, str(game_string)))
-        
+
         # 3. Start arduino threads
         for arduino in self.arduinos:
             arduino.start()
@@ -391,7 +394,6 @@ class PlayerHub(threading.Thread):
                         self.move_queue[i] = False
 
             time.sleep(0.5)
-
 
 
 if __name__ == '__main__':
