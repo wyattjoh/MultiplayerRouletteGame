@@ -453,7 +453,7 @@ class GUI(threading.Thread):
         # Determines winner from all players
         final_scores = [player.get_score() for player in self._player_list]
         winner = final_scores.index(max(final_scores))
-        draw_x = 250
+        draw_x = 260
         draw_y = 80
         # Draws Player 1
         if winner == 0:
@@ -483,7 +483,7 @@ class GUI(threading.Thread):
         elif winner == 8:
             self._play_area.create_rectangle(draw_x-20,draw_y-20,draw_x+20,draw_y+20,fill="blue",width=0)
         # Victory message
-        self._play_area.create_text(350,80,text="WINS!",fill="white",font=("Calibri","24"))
+        self._play_area.create_text(340,80,text="WINS!",fill="white",font=("Calibri","24"))
         self.refresh_display()
         
     
