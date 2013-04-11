@@ -1,26 +1,33 @@
 import errno
 import json
 import socket
-import collections
+import collections.namedtuple as namedtuple
 import os
 import sys
 
-CoreCommStruct = collections.namedtuple('CoreCommStruct', ('id', 'type', 'data'))
-StateString = collections.namedtuple('StateString', 'state,state_message,avatar_code,score,player_count')
-MoveString = collections.namedtuple('MoveString', 'move,offset')
+CoreCommStruct = namedtuple('CoreCommStruct', ('id', 'type', 'data'))
+StateString = namedtuple('StateString', 'state,state_message,avatar_code,score,player_count')
+MoveString = namedtuple('MoveString', 'move,offset')
 
 import logging as CoreLogger
 
-CoreLogger.basicConfig(format='%(asctime)s %(levelname)s: %(message)s', filename='CoreLogger.log',level=CoreLogger.DEBUG)
+CoreLogger.basicConfig(
+    format='%(asctime)s %(levelname)s: %(message)s',
+    filename='CoreLogger.log',
+    level=CoreLogger.DEBUG
+)
+
 
 class CoreException(Exception):
     def __init__(self, value):
         CoreLogger.error(value)
         sys.exit()
 
+
 class CoreComm:
-    HOST = '10.0.1.6' # Default host
-    PORT = 9000 # Default port
+    HOST = '10.0.1.6'  # Default host
+    PORT = 9000  # Default port
+
     def __init__(self, ip_address):
         self.HOST = ip_address
 
@@ -41,15 +48,17 @@ class CoreComm:
         data = self.serial(data)
 
         try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Create new socket object
+            # Create new socket object
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
             try:
-                sock.connect((self.HOST, self.PORT)) # Connect to the specified HOST:PORT
+                # Connect to the specified HOST:PORT
+                sock.connect((self.HOST, self.PORT))
             except socket.error:
                 raise CoreException("No route to host.")
 
             try:
-                sock.sendall(data) # Send the bytes to the HOST:PORT
+                sock.sendall(data)  # Send the bytes to the HOST:PORT
             except socket.error:
                 raise CoreException("Send failed!")
 
@@ -73,16 +82,20 @@ class CoreComm:
         received = ''
         while received.__class__.__name__ != 'CoreCommStruct':
             try:
-                byte_buffer += str(socket.recv(2048).strip(), 'utf-8') # Recieve the response from the host
-                received = CoreCommStruct._make(json.loads(byte_buffer)) # Try and turn it into a dict
+                # Recieve the response from the host
+                byte_buffer += str(socket.recv(2048).strip(), 'utf-8')
+                # Try and turn it into a dict
+                received = CoreCommStruct._make(json.loads(byte_buffer))
             except ValueError:
                 pass
 
         return received
 
+
 def load_configuration(config_filename, config_options_list):
     """
-    Loads and/or creates a configuration file from the desired items in the list supplied.
+    Loads and/or creates a configuration file from the
+    desired items in the list supplied.
 
     Returns a dictionary, with list entries being keys to their values.
     """
@@ -128,6 +141,3 @@ def load_configuration(config_filename, config_options_list):
             config_file.write("%s,%s\n" % (config_option, config_options[config_option]))
 
     return config_options
-
-if __name__ == "__main__":
-    pass
