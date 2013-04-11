@@ -26,6 +26,11 @@ import math
 import time
 import player
 
+# Magic related to adding the shared modules
+import sys
+sys.path.insert(0, "../")
+
+import shared.core as core
 
 
 class GUI(threading.Thread):
@@ -69,13 +74,13 @@ class GUI(threading.Thread):
         Threading behaviour. Starts up the .after() polling for events, as well
         as mainloop for display.
         """
-        print("GUI Thread Started.")
+        core.CoreLogger.debug("GUI Thread Started.")
         # Static draw functions that are independent of player count
         self.draw_init()
         # tkinter polling/initialization
         self._game.after(10,self.event_handling)
         self._game.mainloop()
-        print("GUI Thread Exited.")
+        core.CoreLogger.debug("GUI Thread Exited.")
 
 
 

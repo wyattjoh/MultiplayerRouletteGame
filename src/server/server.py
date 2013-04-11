@@ -57,26 +57,6 @@ class GameHandler2:
 
         return is_locked
 
-# class GameHandler:
-#     def __init__(self):
-#         self.avatar_id = 0
-
-#         # Locks
-#         self._add_player_lock = threading.Lock()
-
-#     def new_player(self):
-#         avatar_id = None
-#         with self._add_player_lock:
-#             avatar_id = self.avatar_id
-#             self.avatar_id += 1
-#         return avatar_id
-
-#     def game_string(self, avatar_id):
-#         return "0,0,%d,010,%d" % (avatar_id, 9)
-
-
-
-
 class ThreadedGameCommuncationHandler(socketserver.ThreadingMixIn, socketserver.TCPServer):
     pass
 
@@ -92,7 +72,7 @@ class GameCommuncationHandler(socketserver.BaseRequestHandler, core.CoreComm):
     def handle(self):
         # self.request is the TCP socket connected to the client
         self.data = self.recieve(self.request)
-        print("Recieved: %s" % str(self.data))
+        core.CoreLogger.debug("Recieved: %s" % str(self.data))
 
         if self.data.type == 'register_hub':
             response = (self.data.id, self.data.type, gh.new_hub())
@@ -127,8 +107,6 @@ class GameCommuncationHandler(socketserver.BaseRequestHandler, core.CoreComm):
 
         elif self.data.type == 'arduino_move':
             # Send translated move and player.
-            
-            print("Received: %s." % str(self.data))
 
             avatar_code = int(self.data.data[0])
 
@@ -153,7 +131,7 @@ class ServerHandler:
         server_thread = threading.Thread(target=server.serve_forever)
         server_thread.daemon = True
         server_thread.start()
-        print("Server loop running in thread: {}".format(server_thread.name))
+        core.CoreLogger.debug("Server loop running in thread: {}".format(server_thread.name))
 
         try:
             gh.ng.start_gui()

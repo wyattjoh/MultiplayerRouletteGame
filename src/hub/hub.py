@@ -25,16 +25,7 @@ class ArduinoWatcher(threading.Thread):
         while self._enabled.wait():
             system_name = platform.system()
             if system_name == "Windows":
-                # Scan for available ports.
-                available = []
-                for i in range(256):
-                    try:
-                        s = serial.Serial(i)
-                        available.append(i)
-                        s.close()
-                    except serial.SerialException:
-                        pass
-                arduinos = available
+                sys.exit()
             elif system_name == "Darwin":
                 # Mac
                 arduinos = glob.glob('/dev/tty.usbmodem*')
@@ -219,7 +210,7 @@ class Arduino(threading.Thread):
             # 3.2 Send via serial to arduino
             self._serial_send()
 
-        print("%s: Disconnect event recieved." % self.name)
+        core.CoreLogger.debug("%s: Disconnect event recieved." % self.name)
 
 
 class HubCommunicator(core.CoreComm):
@@ -279,7 +270,7 @@ class PlayerHub(threading.Thread):
             arduino.setDaemon(True)
             # arduino.start()
 
-            print("Arduino has been detected on port: %s" % arduino_name)
+            core.CoreLogger.debug("Arduino has been detected on port: %s" % arduino_name)
             
             # Add it to the arduinos list
             arduinos.append(arduino)
@@ -296,7 +287,7 @@ class PlayerHub(threading.Thread):
             # Reverse lookup the index from the names list
             index = arduino_names.index(arduino)
 
-            print("Arduino has been removed from port: %s" % arduino)
+            core.CoreLogger.debug("Arduino has been removed from port: %s" % arduino)
             
             # Get a copy of the arduino object and mark it as disconnected
             arduino = arduinos[index]
@@ -346,7 +337,7 @@ class PlayerHub(threading.Thread):
         # 1. Register the arduinos
         # 1.1 Send a number of clients connected, it will return with the ids to assign in a list
         arduino_ids = self.comm.send(('register_arduinos', client_number))
-        print("Got arduino ids: %s" % str(arduino_ids))
+        core.CoreLogger.debug("Got arduino ids: %s" % str(arduino_ids))
 
         while True:
             time.sleep(2)
@@ -364,7 +355,7 @@ class PlayerHub(threading.Thread):
             game_string = self.comm.send(('init_arduino', arduino_ids.data[i]))
             self.arduinos[i].update(game_string.data)
             self.move_queue.append(False)
-            print("Game State(%s): %s." % (self.arduinos[i].name, str(game_string)))
+            core.CoreLogger.debug("Game State(%s): %s." % (self.arduinos[i].name, str(game_string)))
         
         # 3. Start arduino threads
         for arduino in self.arduinos:
@@ -378,7 +369,7 @@ class PlayerHub(threading.Thread):
                     message = arduino.output.get()
                     move = int(message.move)
                     offset = int(message.offset)
-                    print("%s Move from (%d): %d." % (arduino.name, arduino.avatar_code, move - offset))
+                    core.CoreLogger.debug("%s Move from (%d): %d." % (arduino.name, arduino.avatar_code, move - offset))
                     received = self.comm.send(('arduino_move', (arduino.avatar_code, move - offset)))
 
                     if received.data == True:

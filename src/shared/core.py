@@ -9,9 +9,13 @@ CoreCommStruct = collections.namedtuple('CoreCommStruct', ('id', 'type', 'data')
 StateString = collections.namedtuple('StateString', 'state,state_message,avatar_code,score,player_count')
 MoveString = collections.namedtuple('MoveString', 'move,offset')
 
+import logging as CoreLogger
+
+CoreLogger.basicConfig(format='%(asctime)s %(levelname)s: %(message)s', filename='CoreLogger.log',level=CoreLogger.DEBUG)
+
 class CoreException(Exception):
     def __init__(self, value):
-        print(value)
+        CoreLogger.error(value)
         sys.exit()
 
 class CoreComm:
