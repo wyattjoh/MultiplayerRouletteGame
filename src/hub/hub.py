@@ -383,7 +383,7 @@ class PlayerHub(threading.Thread):
                     core.CoreLogger.debug("%s Move from (%d): %d." % (arduino.name, arduino.avatar_code, move - offset))
                     received = self.comm.send(('arduino_move', (arduino.avatar_code, move - offset)))
 
-                    if received.data == True:
+                    if received.data is True:
                         self.move_queue[i] = True
 
                     arduino.output.task_done()
