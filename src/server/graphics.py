@@ -453,6 +453,39 @@ class GUI(threading.Thread):
         # Determines winner from all players
         final_scores = [player.get_score() for player in self._player_list]
         winner = final_scores.index(max(final_scores))
+        draw_x = 280
+        draw_y = 80
+        # Draws Player 1
+        if winner == 0:
+            self._play_area.create_oval(draw_x-20,draw_y-20,draw_x+20,draw_y+20,fill="red",width=0)
+        # Draws Player 2
+        elif winner == 1:
+            self._play_area.create_rectangle(draw_x-20,draw_y-20,draw_x+20,draw_y+20,fill="green",width=0)
+        # Draws Player 3
+        elif winner == 2:
+            self._play_area.create_polygon(draw_x-20,draw_y+20,draw_x+20,draw_y+20,draw_x,draw_y-20,fill="blue")
+        # Draws Player 4
+        elif winner == 3:
+            self._play_area.create_rectangle(draw_x-20,draw_y-20,draw_x+20,draw_y+20,fill="red",width=0)
+        # Draws Player 5
+        elif winner == 4:
+            self._play_area.create_polygon(draw_x-20,draw_y+20,draw_x+20,draw_y+20,draw_x,draw_y-20,fill="green")
+        # Draws Player 6
+        elif winner == 5:
+            self._play_area.create_oval(draw_x-20,draw_y-20,draw_x+20,draw_y+20,fill="blue",width=0)
+        # Draws Player 7
+        elif winner == 6:
+            self._play_area.create_polygon(draw_x-20,draw_y+20,draw_x+20,draw_y+20,draw_x,draw_y-20,fill="red")
+        # Draws Player 8
+        elif winner == 7:
+            self._play_area.create_oval(draw_x-20,draw_y-20,draw_x+20,draw_y+20,fill="green",width=0)
+        # Draws Player 9
+        elif winner == 8:
+            self._play_area.create_rectangle(draw_x-20,draw_y-20,draw_x+20,draw_y+20,fill="blue",width=0)
+        # Victory message
+        self._play_area.create_text(320, 80, text="WINS!", fill="white")
+        self.refresh_display()
+        
     
     
     
@@ -508,8 +541,6 @@ class GUI(threading.Thread):
             self.execute_moves()
             self.execution_event.clear()
         # Poll again
+        if self.winner_event.is_set():
+            self.shower_winner()
         self._game.after(10,self.event_handling)
-    
-    
-    
-    #self.winner_event = threading.Event()
