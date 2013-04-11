@@ -15,6 +15,9 @@ CMPUT 297/115 - Multiplayer Roulette Project - Due 2013-04-11
     It's messy, but it works. Comments should be alright though.
     
     Coordinates for display elements are hard-coded.
+    
+    Variables are directly modified by naive_game, since the tkinter mainloop()
+    is a blocking function (can't use setters to do anything).
 """
 
 import threading
@@ -29,6 +32,7 @@ class GUI(threading.Thread):
     """
     GUI Class, made in tkinter. To allow for game to run at the same time, it
     runs in a thread (inherits from Thread class)
+    
     """
     def __init__(self):
         """
@@ -58,12 +62,22 @@ class GUI(threading.Thread):
         self._player_move_status = []
         self._player_spots = []      
 
+
+
     def run(self):
+        """
+        Threading behaviour. Starts up the .after() polling for events, as well
+        as mainloop for display.
+        """
         print("GUI Thread Started.")
+        # Static draw functions that are independent of player count
         self.draw_init()
+        # tkinter polling/initialization
         self._game.after(10,self.event_handling)
         self._game.mainloop()
         print("GUI Thread Exited.")
+
+
 
     def draw_init(self):
         """
@@ -274,9 +288,11 @@ class GUI(threading.Thread):
         Flashes arrow red, to indicate move queue completion.
         """
         for i in range(0,2):
+            # Flash arrow to red
             self._play_area.itemconfig(self._arrow, fill="red")
             self.refresh_display()
             time.sleep(0.25)
+            # Return to yellow
             self._play_area.itemconfig(self._arrow, fill="yellow")
             self.refresh_display()
             time.sleep(0.25)
@@ -287,11 +303,14 @@ class GUI(threading.Thread):
         """
         Flashes the score of the winner of the current prize
         """
+        # Identifies winner
         winner = self._player_score_display[self._pointer]
         for i in range(0,2):
+            # Flash score yellow
             self._score_area.itemconfig(winner,fill="yellow")
             self.refresh_display()
             time.sleep(0.25)
+            # Return to black
             self._score_area.itemconfig(winner,fill="black")
             self.refresh_display()
             time.sleep(0.25)
@@ -423,6 +442,10 @@ class GUI(threading.Thread):
     
     
     def show_winner(self):
+        """
+        Game Over screen. Displays/indicates winner on-screen.
+        """
+        # Determines winner from all players
         final_scores = [player.get_score() for player in self._player_list]
         winner = final_scores.index(max(final_scores))
     
@@ -447,15 +470,21 @@ class GUI(threading.Thread):
         """
         Used to display intermediary changes in tkinter.
         """
+        # Update method in tkinter
         self._play_area.update_idletasks()
         self._score_area.update_idletasks()
     
     
     
     def event_handling(self):
+        """
+        Polling function to catch events
+        """
+        # New player joining the game
         if self.new_player_event.is_set():
             self.draw_new_player()
             self.new_player_event.clear()
+        # Players locked and game start
         if self.game_lock_event.is_set():
             self.draw_player()
             self.draw_wheel_lines()
@@ -465,34 +494,17 @@ class GUI(threading.Thread):
             self.update_scores()
             self.update_moved()    
             self.game_lock_event.clear()
+        # New move submitted
         if self.new_move_event.is_set():
             self.update_moved()
             self.new_move_event.clear()
+        # All moves submitted, moves executed
         if self.execution_event.is_set():
             self.execute_moves()
             self.execution_event.clear()
-        self._game.after(1,self.event_handling)
+        # Poll again
+        self._game.after(10,self.event_handling)
     
     
     
     #self.winner_event = threading.Event()
-
-        
-"""
-a = GUI()
-for i in range(0,9):
-    a._player_list.append(player.Player(i,i))
-import random
-for player in a._player_list:
-    player.set_score(random.randint(-50, 200))
-    player.next_move()
-a._move_queue = [random.randint(-4,4) for i in range(0,9)]
-a._pot = 5
-a._cur_round = 6
-a.new_player_event.set()
-a.game_lock_event.set()
-a.new_move_event.set()
-a.execution_event.set()
-a._game.after(1,a.event_handling)
-a._game.mainloop()
-"""
