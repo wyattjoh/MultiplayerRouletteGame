@@ -8,7 +8,11 @@ CMPUT 297/115 - Multiplayer Roulette Project - Due 2013-04-11
     This assignment has been done under the full collaboration model,
     and any extra resources are cited in the code below.
     
-    DUE TO THE NETWORKED NATURE OF OUR PROJECT, DOCTESTS ARE IMPRACTICAL
+    DUE TO THE NETWORKED NATURE OF OUR PROJECT, DOCTESTS ARE IMPRACTICAL.
+    
+    This is the main game file, which handles the game state, and deals with
+    input/output. It directly manipulates the GUI for display as well.
+    
 """
 
 import player
