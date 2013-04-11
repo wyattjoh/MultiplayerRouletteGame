@@ -1,3 +1,17 @@
+/*
+CMPUT 297/115 - Multiplayer Roulette Project - Due 2013-04-11
+    Version 1.0 2013-04-09
+
+    By: Jesse H. Chu (1202466)
+        Wyatt Johnson (1230799)
+
+    This assignment has been done under the full collaboration model,
+    and any extra resources are cited in the code below.
+    
+    Serial functions, responsible for communication across serial.
+    Also initializes the Serial port for the Arduino.
+*/
+
 #include <serial.h>
 
 /*~~~ FUNCTIONS ~~~*/

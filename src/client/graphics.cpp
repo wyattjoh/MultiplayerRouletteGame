@@ -1,3 +1,17 @@
+/*
+CMPUT 297/115 - Multiplayer Roulette Project - Due 2013-04-11
+    Version 1.0 2013-04-09
+
+    By: Jesse H. Chu (1202466)
+        Wyatt Johnson (1230799)
+
+    This assignment has been done under the full collaboration model,
+    and any extra resources are cited in the code below.
+    
+    Graphical Functions. Responsible for controlling/initializing the
+    Adafruit display.
+*/
+
 #include <graphics.h>
 
 // Declaration of tft variable
@@ -146,23 +160,27 @@ void draw_status(int8_t status_message, int8_t winnings){
   tft.fillRect(0, 45, 160, 30, BACKGROUND_COLOR);
   tft.setTextColor(MESSAGE_COLOR);
   tft.setTextSize(1);
-  // Displays status message
+  // Displays status messages
+  // Select move mode
   if (status_message == 0){
     tft.setCursor(32, 55);
     tft.print("Select your move");
   }
+  // Waiting for other players to submit input
   if (status_message == 1){
     tft.setCursor(54, 48);
     tft.print("Move sent");
     tft.setCursor(6, 60);
     tft.print("Waiting for other players");
   }
+  // Game Over screen
   if (status_message == 2){
     tft.setTextSize(2);
     tft.setTextColor(RED);
     tft.setCursor(28, 51);
     tft.print("GAME OVER");
   }
+  // Select move with point win notification
   if (status_message == 3){
     tft.setCursor(32, 48);
     tft.print("Select your move");
@@ -171,6 +189,7 @@ void draw_status(int8_t status_message, int8_t winnings){
     tft.print(winnings);
     tft.print(" points!");
   }
+  // Game over with point win notification
   if (status_message ==4){
     tft.setTextColor(RED);
     tft.setCursor(54, 48);

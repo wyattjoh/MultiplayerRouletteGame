@@ -1,3 +1,18 @@
+/*
+CMPUT 297/115 - Multiplayer Roulette Project - Due 2013-04-11
+    Version 1.0 2013-04-09
+
+    By: Jesse H. Chu (1202466)
+        Wyatt Johnson (1230799)
+
+    This assignment has been done under the full collaboration model,
+    and any extra resources are cited in the code below.
+
+    Header file for runtime.
+    Has Port Definitions, Color Definitions, External Variables, 
+    Libraries and Forward Declarations.
+*/
+
 #ifndef _GRAPHICS_H
 #define _GRAPHICS_H
 
