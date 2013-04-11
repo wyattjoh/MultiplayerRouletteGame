@@ -1,0 +1,26 @@
+~~~ Analog Stick 1 ~~~
+ VCC to Positive BB
+VERT to A0
+HORZ to A1
+ SEL to Pin 4
+ GND to Ground BB
+
+
+
+~~~ BB Bus ~~~
+5V  to Positive BB
+GND to Ground BB
+
+
+
+~~~ LCD ~~~
+    GND to BB GND bus
+    VCC to BB positive bus
+  RESET to Pin 8
+    D/C to Pin 7
+CARD_CS to Pin 5
+ TFT_CS to Pin 6
+   MOSI to Pin 51
+    SCK to Pin 52
+   MISO to Pin 50
+   LITE to BB positive bus
