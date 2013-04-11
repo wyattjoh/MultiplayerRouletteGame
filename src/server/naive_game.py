@@ -37,18 +37,27 @@ class Game(threading.Thread):
         # GUI instance
         self._display = graphics.GUI()
 
+        # Events for thread behaviour
         self.new_player_lock = threading.Lock()
         self.game_lock_event = threading.Event()
         self.new_player_event = threading.Event()
-
         self.new_move_lock = threading.Lock()
         self.new_move_event = threading.Event()
 
-
+        # Run thread
         self.start()
     
+    
+    
     def start_gui(self):
+        """
+        Used to get tkinter to run in the main thread.
+        
+        REQUIRED FOR GUI, since tkinter is stupid when using threads.
+        """
         self._display.run()
+        
+        
         
     def new_game(self):
         """
@@ -90,29 +99,34 @@ class Game(threading.Thread):
         """
         avatar = -1
         with self.new_player_lock:
-            # Returns player_id/avatar code if successful, else -1
-            if ((len(self._player_list) < self._player_limit) and 
-                self._game_phase == 0):
+            # Checks if there is space for a new player
+            if ((len(self._player_list) < self._player_limit) and self._game_phase == 0):
+                # Assigns next available id
                 avatar = self._avatars.pop(0)
+                # Adds to list of players
                 self._player_list.append(player.Player(avatar, avatar))
                 self._display._player_list = self._player_list
+                # Triggers new player events
                 self.new_player_event.set()
                 self._display.new_player_event.set()
-        
         return avatar
+
 
         
     def lock_game(self):
         """
         Starts the game, locking in all players.
         """
+        # Does a final update to ensure GUI gets correct variables to display
         self._display._player_list = self._player_list
         self._display._move_queue = self._move_queue
         self._display._pointer = self._pointer
         self._display._pot = self._pot
         self._display._cur_round = self._cur_round
+        # Triggers game lock events
         self._display.game_lock_event.set()
         self.game_lock_event.set()
+        
         
 
     def new_pot(self):
@@ -124,8 +138,10 @@ class Game(threading.Thread):
         min_pot = 1
         max_pot = 10
         self._pot = random.randint(min_pot, max_pot)
+        # Updates GUI pot
         self._display._pot = self._pot
     
+
     
     def add_new_move(self, player, move):
         """
@@ -133,12 +149,16 @@ class Game(threading.Thread):
         Player's moved flag is set to True, to prevent multiple additions
         """
         with self.new_move_lock:
+            # Prevents multiple moves being submitted by one player
             if self._player_list[player].has_moved() == False:
+                # Adds to queue and flags player as having submitted a move
                 self._move_queue.append(move)
                 self._player_list[player].made_move()
+                # Triggers new move events
                 self.new_move_event.set()
                 self._display.new_move_event.set()
 
+        
         
     def execute_moves(self):
         """
@@ -157,6 +177,7 @@ class Game(threading.Thread):
         score = winner.get_score() + self._pot
         winner.set_score(score)
 
+        # Debug statements
         if self._pot <= 0:
             text = "lost"
         else:
@@ -167,12 +188,15 @@ class Game(threading.Thread):
         # Advances to next round
         self._cur_round += 1
         self._display._cur_round = self._cur_round
+        
+        # Checks if game has ended
         if self._cur_round > self._round_limit:
             self._game_phase = 3
         else:
             self._game_phase = 1
             self.new_pot()
         
+        # Triggers animation of move execution, wait for completion
         self._display.execution_event.set()
         while self._display.execution_event.is_set():
             pass
@@ -181,6 +205,7 @@ class Game(threading.Thread):
         for player in self._player_list:
             player.next_move()
     
+        # Updates move status on GUI using an event
         self._display.new_move_event.set()
 
         with self._arduino_mailbox_lock:
@@ -190,25 +215,26 @@ class Game(threading.Thread):
         # TODO: Update arduino state strings
         
         
+        
     def game_over(self):
         """
-        Declares winner, or winners with highest score
+        Declares winner, or winners with highest score, displays on GUI
         """
-        scores = [player.get_score() for player in self._player_list]
-        highest = max(scores)
-        if scores.count(highest) > 1:
-            # GUI DISPLAY MULTIPLE WINNERS
-            pass
-        else:
-            # GUI DISPLAY ONE WINNER
-            pass
-        # TODO: Update arduino state strings
+        # Triggers event to display the winner
+        self._display.winner_event.set()
+
 
 
     def init_arduino(self, avatar_id):
         return self.get_state_string(avatar_id, True)
 
+
+
     def get_state_string(self, avatar_id, ovr=False):
+        """
+        Obtains a string containing information for a particular player. String
+        is specially formatted to be sent to the Arduino to update it.
+        """
         with self._arduino_mailbox_lock:
             if avatar_id in self._arduino_mailbox:
                 ovr = True
@@ -227,8 +253,12 @@ class Game(threading.Thread):
         count = len(self._player_list)
         return "%d,%d,%d,%d,%d" % (state, status, avatar, score, count)
     
+
     
     def run(self):
+        """
+        Thread routine. Controls game flow through an infinite while loop.
+        """
         self.new_game()
 
         while True:
@@ -241,7 +271,6 @@ class Game(threading.Thread):
                     self._game_phase = 1
                 if self.new_player_event.is_set():
                     with self.new_player_lock:
-                        # DO GUI UPDATE FOR THE NEW PLAYER THAT IS ADDED
                         self.new_player_event.clear()
                 """
                 Goes through game phases 1,2,3
@@ -250,14 +279,15 @@ class Game(threading.Thread):
                 3: Game over, winner declared
                 """
             elif self._game_phase == 1:
+                # Collect moves from all players
                 if self.new_move_event.wait():
                     with self.new_move_lock:
+                        # Check if all moves collected
                         if len(self._move_queue) == len(self._player_list):
                             self._game_phase = 2
-
                         self.new_move_event.clear()
             elif self._game_phase == 2:
+                # Execute all collected moves
                 self.execute_moves()
             elif self._game_phase == 3:
-                # DISPLAY THE WINNER
                 self.game_over()
