@@ -459,6 +459,7 @@ class GUI(threading.Thread):
             self.draw_player()
             self.draw_wheel_lines()
             self.draw_arrow()
+            self.spin_arrow(0)
             self.round_update()
             self.update_scores()
             self.update_moved()    
