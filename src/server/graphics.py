@@ -376,7 +376,7 @@ class GUI(threading.Thread):
         Smoothness of animation set by turn_resolution (larger is smoother)
         """
         # Calculates angle difference, sets turn_resolution
-        turn_resolution = 100
+        turn_resolution = 10
         delay_factor = 4
         delay_time = 1/(delay_factor*turn_resolution)
         dest = (self._pointer + move) % len(self._player_list)
@@ -401,6 +401,7 @@ class GUI(threading.Thread):
                 # Corrects any overflow for accepted angle values
                 while (cur_angle <= -2*math.pi):
                     cur_angle += 2*math.pi
+
         elif(0 < angle_dist < math.pi) or (angle_dist <= -math.pi):
             while cur_angle != dest_angle:
                 # Smaller steps towards destination
@@ -459,7 +460,7 @@ class GUI(threading.Thread):
             self.draw_player()
             self.draw_wheel_lines()
             self.draw_arrow()
-            self.spin_arrow(0)
+            self.flash_arrow()
             self.round_update()
             self.update_scores()
             self.update_moved()    
