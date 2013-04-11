@@ -1,9 +1,11 @@
 import errno
 import json
 import socket
-import collections.namedtuple as namedtuple
+import collections
 import os
 import sys
+
+namedtuple = collections.namedtuple
 
 CoreCommStruct = namedtuple('CoreCommStruct', ('id', 'type', 'data'))
 StateString = namedtuple('StateString', 'state,state_message,avatar_code,score,player_count')
