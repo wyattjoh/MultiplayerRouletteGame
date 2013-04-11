@@ -542,5 +542,5 @@ class GUI(threading.Thread):
             self.execution_event.clear()
         # Poll again
         if self.winner_event.is_set():
-            self.shower_winner()
+            self.show_winner()
         self._game.after(10,self.event_handling)
