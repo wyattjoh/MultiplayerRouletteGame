@@ -17,11 +17,14 @@ CMPUT 297/115 - Multiplayer Roulette Project - Due 2013-04-11
 
 import player
 import random
-import time
 import graphics
 import threading
 
+# Magic related to adding the shared modules
+import sys
+sys.path.insert(0, "../")
 
+import shared.core as core
 
 class Game(threading.Thread):
     """
@@ -187,7 +190,7 @@ class Game(threading.Thread):
         else:
             text = "won"
 
-        print("Avatar: %d %s %d points!" % (winner.get_avatar(), text, self._pot))
+        core.CoreLogger.debug("Avatar: %d %s %d points!" % (winner.get_avatar(), text, self._pot))
         
         # Advances to next round
         self._cur_round += 1

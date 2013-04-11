@@ -8,6 +8,7 @@ import glob
 
 # Magic related to adding the shared modules
 import sys
+import os
 sys.path.insert(0, "../")
 
 import shared.core as core
@@ -300,7 +301,10 @@ class PlayerHub(threading.Thread):
             # Mark this arduino as removed
             self.removed_queue.task_done()
 
-        print("Arduino list: %s" % str(arduino_names))
+        print("Arduino list:")
+
+        for arduino in arduino_names:
+            print("\t%s" % str(arduino))
 
         # Update the controller references
         self.arduinos = arduinos
@@ -317,6 +321,8 @@ class PlayerHub(threading.Thread):
         # Enable the port watcher
         self.arduino_watcher.enable()
         while True:
+            os.system('clear')
+            print("Press 'l' and [ENTER] to lock current connected Arduinos.\nYou will have 8 seconds for other hubs to join before the game starts...\n")
             if self.user_input.qsize():
                 command = self.user_input.get()
 
@@ -340,7 +346,7 @@ class PlayerHub(threading.Thread):
         core.CoreLogger.debug("Got arduino ids: %s" % str(arduino_ids))
 
         while True:
-            time.sleep(2)
+            time.sleep(1)
 
             lock_check = self.comm.send(('locked', True))
             if True is lock_check.data:
@@ -349,6 +355,8 @@ class PlayerHub(threading.Thread):
             if lock_check.data != 0:
                 print("%d seconds left..." % lock_check.data)
 
+        os.system('clear')
+        print("Game in progress, see Arduino screens and Game Server Screen.")
 
         # 2. Init arduinos
         for i in range(client_number):
@@ -382,7 +390,7 @@ class PlayerHub(threading.Thread):
                         arduino.update(game_string_update.data)
                         self.move_queue[i] = False
 
-                time.sleep(1)
+            time.sleep(0.5)
 
 
 
