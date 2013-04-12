@@ -7,12 +7,12 @@ CMPUT 297/115 - Multiplayer Roulette Project - Due 2013-04-11
 
     This assignment has been done under the full collaboration model,
     and any extra resources are cited in the code below.
-    
+
     DUE TO THE NETWORKED NATURE OF OUR PROJECT, DOCTESTS ARE IMPRACTICAL.
-    
+
     This is the main game file, which handles the game state, and deals with
     input/output. It directly manipulates the GUI for display as well.
-    
+
 """
 
 import player
@@ -26,15 +26,16 @@ sys.path.insert(0, "../")
 
 import shared.core as core
 
+
 class Game(threading.Thread):
     """
     Main game server, runs on a loop
     """
-    
+
     # Hard-coded player and round limits for the game
     _player_limit = 9
     _round_limit = 10
-    
+
     def __init__(self):
         """
         Constructor for the game instance
@@ -53,55 +54,46 @@ class Game(threading.Thread):
 
         # Run thread
         self.start()
-    
-    
-    
+
     def start_gui(self):
         """
         Used to get tkinter to run in the main thread.
-        
         REQUIRED FOR GUI, since tkinter is stupid when using threads.
         """
         self._display.run()
-        
-        
-        
+
     def new_game(self):
         """
         Initializes variables for use; Also starts up the GUI
         """
         # Player IDs to be assigned to players
-        self._avatars = [0,1,2,3,4,5,6,7,8]
+        self._avatars = [0, 1, 2, 3, 4, 5, 6, 7, 8]
         self._player_list = []
-        
+
         # Gameflow control
         self._game_phase = 0
-        
+
         # Queue of moves to be performed
         self._move_queue = []
 
         # Current wheel position
-        self._pointer = 0       
-        
+        self._pointer = 0
+
         # Points to be won for current round (randomly generated)
         self._pot = 0
         self.new_pot()
-        
+
         # Round counter
         self._cur_round = 1
-        
+
         # Arduino mailbox
         self._arduino_mailbox = []
         self._arduino_mailbox_lock = threading.Lock()
 
-
-        
     def add_new_player(self):
         """
         Creates a player if there is room, and adds to player list.
-        
         Returns player_id in the range of (0,8) [Inclusive] if successful.
-        
         Failure (full game) returns a -1.
         """
         avatar = -1
@@ -118,8 +110,6 @@ class Game(threading.Thread):
                 self._display.new_player_event.set()
         return avatar
 
-
-        
     def lock_game(self):
         """
         Starts the game, locking in all players.
@@ -133,8 +123,6 @@ class Game(threading.Thread):
         # Triggers game lock events
         self._display.game_lock_event.set()
         self.game_lock_event.set()
-        
-        
 
     def new_pot(self):
         """
@@ -147,9 +135,7 @@ class Game(threading.Thread):
         self._pot = random.randint(min_pot, max_pot)
         # Updates GUI pot
         self._display._pot = self._pot
-    
 
-    
     def add_new_move(self, player, move):
         """
         Adds a move into the move queue from player.
@@ -157,7 +143,7 @@ class Game(threading.Thread):
         """
         with self.new_move_lock:
             # Prevents multiple moves being submitted by one player
-            if self._player_list[player].has_moved() == False:
+            if self._player_list[player].has_moved() is False:
                 # Adds to queue and flags player as having submitted a move
                 self._move_queue.append(move)
                 self._player_list[player].made_move()
@@ -165,8 +151,6 @@ class Game(threading.Thread):
                 self.new_move_event.set()
                 self._display.new_move_event.set()
 
-        
-        
     def execute_moves(self):
         """
         Executes all moves in the move queue, and awards the pot to the player
@@ -178,7 +162,7 @@ class Game(threading.Thread):
             self._pointer += move
             self._pointer = self._pointer % len(self._player_list)
         self._move_queue = []
-        
+
         # Awards the pot to the winner
         winner = self._player_list[self._pointer]
         score = winner.get_score() + self._pot
@@ -191,38 +175,33 @@ class Game(threading.Thread):
             text = "won"
 
         core.CoreLogger.debug("Avatar: %d %s %d points!" % (winner.get_avatar(), text, self._pot))
-        
+
         # Advances to next round
         self._cur_round += 1
         self._display._cur_round = self._cur_round
-        
+
         # Checks if game has ended
         if self._cur_round > self._round_limit:
             self._game_phase = 3
         else:
             self._game_phase = 1
             self.new_pot()
-        
+
         # Triggers animation of move execution, wait for completion
         self._display.execution_event.set()
         while self._display.execution_event.is_set():
             pass
-        
+
         # Clears all moved flags for players
         for player in self._player_list:
             player.next_move()
-    
+
         # Updates move status on GUI using an event
         self._display.new_move_event.set()
 
         with self._arduino_mailbox_lock:
-            self._arduino_mailbox = [ x for x in range(len(self._player_list)) ]
+            self._arduino_mailbox = [x for x in range(len(self._player_list))]
 
-        # UPDATE GUI FOR MOVE STATUS, POT, ROUND COUNT
-        # TODO: Update arduino state strings
-        
-        
-        
     def game_over(self):
         """
         Declares winner, or winners with highest score, displays on GUI
@@ -230,12 +209,8 @@ class Game(threading.Thread):
         # Triggers event to display the winner
         self._display.winner_event.set()
 
-
-
     def init_arduino(self, avatar_id):
         return self.get_state_string(avatar_id, True)
-
-
 
     def get_state_string(self, avatar_id, ovr=False):
         """
@@ -259,9 +234,7 @@ class Game(threading.Thread):
         score = self._player_list[avatar_id].get_score()
         count = len(self._player_list)
         return "%d,%d,%d,%d,%d" % (state, status, avatar, score, count)
-    
 
-    
     def run(self):
         """
         Thread routine. Controls game flow through an infinite while loop.

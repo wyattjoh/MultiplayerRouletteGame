@@ -17,29 +17,32 @@ import shared.core as core
 class ArduinoWatcher(threading.Thread):
     def __init__(self, added_queue, removed_queue):
         super().__init__()
-        self.added_queue = added_queue
-        self.removed_queue = removed_queue
-        self.arduinos = []
+        self.added_queue = added_queue  # Added arduino queue
+        self.removed_queue = removed_queue  # Removed arduino queue
+        self.arduinos = []  # List of active arduinos
 
-        self._enabled = threading.Event()
+        self._enabled = threading.Event()  # Flag for the arduino watcher's
 
     def run(self):
+        # Wait until the arduino is active, and block here until it is
         while self._enabled.wait():
-            system_name = platform.system()
+            system_name = platform.system()  # Get the string
             if system_name == "Windows":
-                sys.exit()
+                sys.exit()  # If its windows... quit :)
             elif system_name == "Darwin":
-                # Mac
+                # Mac uses tty.usbmodem* pattern
                 arduinos = glob.glob('/dev/tty.usbmodem*')
             else:
-                # Assume Linux or something else
+                # Linux uses ttyACM* pattern
                 arduinos = glob.glob('/dev/ttyACM*')
 
+            # Add any arduinos in the list that are not in the list already
             for arduino in arduinos:
                 if arduino not in self.arduinos:
                     self.added_queue.put(arduino)
                     self.arduinos.append(arduino)
 
+            # Remove any arduinos that are not in the list that were stored
             for arduino in self.arduinos:
                 if arduino not in arduinos:
                     self.removed_queue.put(arduino)
@@ -89,18 +92,23 @@ class Arduino(threading.Thread):
         self.serial = serial.Serial(name, 9600)
 
     def update_string_from_vars(self):
+        # Parse string variables into the string
         self.state = '%d,%d,%d,%03d,%d' % (self.state, self.state_message, self.avatar_code, self.score, self.player_count)
 
     def disconnected(self):
+        # Set the died event
         self._died.set()
 
     def is_connected(self):
+        # Return the ! if the died flag is set
         return not self._died.isSet()
 
     def update(self, state):
+        # Convienence function fot register
         self.register_arduino(state)
 
     def register_arduino(self, state):
+        # Add message to inbox
         message_io = core.StateString._make(state.split(','))
         self.input.put(message_io)
         self._registered.set()
@@ -115,14 +123,17 @@ class Arduino(threading.Thread):
             if self.state.__class__.__name__ != 'StateString':
                 return
 
+            # Load state string
             state_str = self.state
 
+            # Parse statestring as integers
             state = int(state_str.state)
             state_message = int(state_str.state_message)
             avatar_code = int(state_str.avatar_code)
             score = int(state_str.score)
             player_count = int(state_str.player_count)
 
+            # Update instance variables
             self.state_code = state
             self.state_message = state_message
             self.avatar_code = avatar_code
@@ -149,39 +160,53 @@ class Arduino(threading.Thread):
             recieve_buffer = ""
             message = ""
             while type(message) is str:
+                # Read one byte
                 raw_message = self.serial.read(1)
+                # Convert it to ascii
                 recieve_buffer += raw_message.decode('ascii')
 
+                # Check if the last character is a newline
                 if ord(recieve_buffer[-1]) != 10:
                     continue
                 else:
+                    # Remove the newline and carriage return
                     recieve_buffer = recieve_buffer[:-2]
 
+                # Try and turn it into a move string
                 try:
                     message = core.MoveString._make(recieve_buffer.split(','))
                 except TypeError:
+                    # Check if it is longer than the max length, probably a corruption if so
                     if len(recieve_buffer) > Arduino.max_message_length:
+                        # So restart it and rebuffer
                         recieve_buffer = ""
                         continue
 
+                # If somehow it turned out to be a string anyways... restart
                 if type(message) is str:
                     continue
 
+                # Try and verify if the variables loaded were actually integers
                 try:
                     int(message.move)
                     int(message.offset)
                 except ValueError:
+                    # Else rebuffer and restart
                     message = ""
                     recieve_buffer = ""
 
+            # Return the move object
             return message
 
         except (serial.serialutil.SerialException, OSError):
+            # Else some other socket error occured, so mark the arduino as disconnected
             self.disconnected()
 
     def run(self):
         while self.is_connected():
+            # While it is connected, recieve a message
             serial_input = self._serial_receive()
+            # If it is the ini, say we have registered, or wait for it, and then send it the deets
             if int(serial_input.move) is -1 and int(serial_input.offset) is 0:
                 # Correct ini recieved, proceed to give them the state
                 # 1. Wait until the registration data has been recieved
@@ -195,6 +220,7 @@ class Arduino(threading.Thread):
 
                 break
 
+        # While it is still connected, loop
         while self.is_connected():
             # 1. Wait for move from arduino
             # 1.1 Do a blocking read from it until it responds
@@ -222,29 +248,33 @@ class Arduino(threading.Thread):
 
 class HubCommunicator(core.CoreComm):
     def __init__(self, ip_address):
+        # Init the CoreComm
         super().__init__(ip_address)
 
+        # Set up ini_vars
         self.hub_id = 0
         self._register_hub()
 
     def _register_hub(self):
+        # Get hub_id/register it as a waiting hub
         message = self.send(('register_hub', None))
         self.hub_id = int(message.data)
-        print("Register Hub: %s." % str(self.hub_id))
+        core.CoreLogger.debug("Register Hub: %s." % str(self.hub_id))
 
     def send(self, message):
+        # Send if we are only sending the message and type (2 args)
         if len(message) is 2:
             return super().send((self.hub_id, message[0], message[1]))
 
 
 class PlayerHub(threading.Thread):
+    # Config file to load the defaults from
     config_file = "../shared/.env"
+    # Config options to save in config_file
     config_options = ['ip_address']
 
     def __init__(self, user_input, ip_address):
         super().__init__()
-
-        # Load defaults from config file if exists
 
         # Setup the user input manager
         self.user_input = user_input
@@ -259,6 +289,7 @@ class PlayerHub(threading.Thread):
         # Setup the communication handler
         self.comm = HubCommunicator(ip_address)
 
+        # Set up management lists
         self.arduino_count = 0
         self.arduinos = []
         self.move_queue = []
@@ -313,12 +344,6 @@ class PlayerHub(threading.Thread):
         # Update the controller references
         self.arduinos = arduinos
 
-    def read_from_arduinos(self):
-        pass
-
-    def register_arduino(self, arduino):
-        pass
-
     def run(self):
         # Enable the port watcher
         self.arduino_watcher.enable()
@@ -338,6 +363,7 @@ class PlayerHub(threading.Thread):
             # Update the attached controllers and players
             self.update_controllers()
 
+            # Sleep for one, prevents CPU spooling
             time.sleep(1)
 
         client_number = len(self.arduinos)
@@ -349,15 +375,19 @@ class PlayerHub(threading.Thread):
         core.CoreLogger.debug("Got arduino ids: %s" % str(arduino_ids))
 
         while True:
+            # Sleep once, then check
             time.sleep(1)
 
+            # To see if the hub lock has been accepted
             lock_check = self.comm.send(('locked', True))
             if True is lock_check.data:
                 break
 
+            # Else print the time left till it is
             if lock_check.data != 0:
                 print("%d seconds left..." % lock_check.data)
 
+        # Clear the screen to start the game
         os.system('clear')
         print("Game in progress, see Arduino screens and Game Server Screen.")
 
@@ -377,41 +407,53 @@ class PlayerHub(threading.Thread):
             for i in range(client_number):
                 arduino = self.arduinos[i]
                 if not arduino.output.empty():
+                    # Get the message from the arduino
                     message = arduino.output.get()
+
+                    # Get the int of move and offset
                     move = int(message.move)
                     offset = int(message.offset)
+
+                    # Send debug messages to log
                     core.CoreLogger.debug("%s Move from (%d): %d." % (arduino.name, arduino.avatar_code, move - offset))
+
+                    # Send the actual move to the server
                     received = self.comm.send(('arduino_move', (arduino.avatar_code, move - offset)))
 
+                    # If true, then the message was recieved, wait for the updated game status by setting the move_queue[i] to True
                     if received.data is True:
                         self.move_queue[i] = True
 
+                    # Mark the input as processed
                     arduino.output.task_done()
+
+                # If the queue is waiting for a move update, then check for one
                 if self.move_queue[i]:
                     game_string_update = self.comm.send(('arduino_state', arduino.avatar_code))
                     if game_string_update.data is not False:
                         arduino.update(game_string_update.data)
                         self.move_queue[i] = False
 
+            # Sleep for half a second to prevent CPU spooling
             time.sleep(0.5)
 
 
 if __name__ == '__main__':
     # Prepare and/or verify the env file
-
     config_options = core.load_configuration(PlayerHub.config_file, PlayerHub.config_options)
 
+    # Set up the input queue
     user_input = queue.Queue(1)
 
+    # Set up and launch the playerhub
     ph = PlayerHub(user_input, config_options['ip_address'])
     ph.setDaemon(True)
     ph.start()
 
     try:
-
         while True:
+            # Infinite while loop running input loop to the input for the user
             val = input()
             user_input.put(val)
-
     except KeyboardInterrupt:
         pass
