@@ -24,5 +24,8 @@ The game is based on a mini-game in Mario Party for Nintendo Wii. The game invol
 
 3. Starting the **Arduino's**:
 	* Once the **Game Server** and **Player Hub** have been started, you may continue
+	* Ensure that all Arduinos are wired according to the guide found in docs/WIRING.txt
 	* All Arduino's must have the Arduino Client Firmware loaded onto them, located in `src/client`, run `make upload` to compile and upload the client firmware
-	* Once all players have connected their Arduino's running the Arduino Client Firmware to the computer running the Player Hub, follow the onscreen instructions to begin the game
+	* Connect all player Arduinos to a running hub, ensuring that they are detected (this will be displayed as a list on-screen in the hub)
+	* Once all players have connected their Arduino's running the Arduino Client Firmware to the computer running the Player Hub, lock the hub by enter the character 'l'
+    * Follow the onscreen instructions to begin the game. Individual statistics are display on the Arduino, while the main game will be shown on the server GUI.
